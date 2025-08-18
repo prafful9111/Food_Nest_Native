@@ -1,221 +1,406 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
-  TextInput,
   Pressable,
+  TextInput,
+  Modal,
   FlatList,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 
-type Stop = { id: string; name: string; lat: number; lng: number };
+/** ---------- Types ---------- */
 type RouteItem = {
-  id: string;
+  id: number;
   name: string;
+  region: string;
   status: "Active" | "Inactive";
-  rider: string | "Unassigned";
+  rider: string;
+  stops: string[];
   duration: string;
   lastUpdate: string;
-  stops: Stop[];
 };
 
+/** ---------- Seed data (parity with web) ---------- */
 const seed: RouteItem[] = [
   {
-    id: "1",
+    id: 1,
     name: "Downtown Route A",
+    region: "Central",
     status: "Active",
-    rider: "Rohit",
-    duration: "3 hours",
-    lastUpdate: "10 min ago",
-    stops: [
-      { id: "s1", name: "Central Park", lat: 19.07, lng: 72.87 },
-      { id: "s2", name: "City Hall", lat: 19.08, lng: 72.86 },
-    ],
+    rider: "John Smith",
+    stops: ["City Hall", "Central Park", "Business District", "Shopping Mall", "University Campus"],
+    duration: "4 hours",
+    lastUpdate: "2 hours ago",
   },
   {
-    id: "2",
-    name: "City Center B",
+    id: 2,
+    name: "Suburban Route B",
+    region: "North",
     status: "Active",
-    rider: "Asha",
-    duration: "2.5 hours",
-    lastUpdate: "30 min ago",
-    stops: [],
+    rider: "Mike Davis",
+    stops: ["Residential Area A", "Community Center", "Local School", "Grocery Plaza", "Medical Center"],
+    duration: "3.5 hours",
+    lastUpdate: "1 hour ago",
+  },
+  {
+    id: 3,
+    name: "Beach Route C",
+    region: "South",
+    status: "Inactive",
+    rider: "Unassigned",
+    stops: ["Marina", "Beach Boardwalk", "Pier Restaurant", "Surf Shop", "Beach Hotel"],
+    duration: "5 hours",
+    lastUpdate: "1 day ago",
   },
 ];
 
+/** ---------- Screen ---------- */
 export default function RoutesManagement() {
   const [routes, setRoutes] = useState<RouteItem[]>(seed);
-  const [newStopName, setNewStopName] = useState("");
 
-  const addStop = (routeId: string) => {
-    if (!newStopName.trim()) return;
-    setRoutes((arr) =>
-      arr.map((r) =>
-        r.id === routeId
-          ? {
-              ...r,
-              stops: [
-                ...r.stops,
-                { id: String(Date.now()), name: newStopName, lat: 0, lng: 0 },
-              ],
-            }
-          : r
-      )
-    );
-    setNewStopName("");
+  // Create/Edit dialog
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<RouteItem | null>(null);
+
+  // Form state
+  const [routeName, setRouteName] = useState("");
+  const [region, setRegion] = useState("");
+  const [rider, setRider] = useState("");
+  const [stops, setStops] = useState<string[]>([""]);
+  const [tab, setTab] = useState<"manual" | "map">("manual");
+
+  const canSave = routeName.trim() && region.trim() && (stops.filter(s => s.trim()).length > 0);
+
+  const resetForm = () => {
+    setEditing(null);
+    setRouteName("");
+    setRegion("");
+    setRider("");
+    setStops([""]);
+    setTab("manual");
   };
 
-  const removeStop = (routeId: string, stopId: string) => {
-    setRoutes((arr) =>
-      arr.map((r) =>
-        r.id === routeId ? { ...r, stops: r.stops.filter((s) => s.id !== stopId) } : r
-      )
-    );
+  const startCreate = () => { resetForm(); setOpen(true); };
+  const startEdit = (r: RouteItem) => {
+    setEditing(r);
+    setRouteName(r.name);
+    setRegion(r.region);
+    setRider(r.rider === "Unassigned" ? "" : r.rider);
+    setStops(r.stops.length ? r.stops : [""]);
+    setOpen(true);
+  };
+
+  const addStop = () => setStops(prev => [...prev, ""]);
+  const removeStop = (i: number) => setStops(prev => prev.length > 1 ? prev.filter((_, idx) => idx !== i) : prev);
+  const changeStop = (i: number, v: string) => setStops(prev => prev.map((s, idx) => idx === i ? v : s));
+
+  const save = () => {
+    if (!canSave) return;
+
+    const payload: RouteItem = {
+      id: editing ? editing.id : Date.now(),
+      name: routeName.trim(),
+      region: region.trim(),
+      status: editing?.status ?? "Active",
+      rider: rider.trim() || "Unassigned",
+      stops: stops.map(s => s.trim()).filter(Boolean),
+      duration: editing?.duration ?? "3 hours",
+      lastUpdate: "just now",
+    };
+
+    setRoutes(list => editing ? list.map(r => r.id === editing.id ? payload : r) : [payload, ...list]);
+    setOpen(false);
+    resetForm();
   };
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
-      <Text style={styles.h1}>Routes Management</Text>
-      <Text style={styles.subtle}>Manage routes, riders and stops</Text>
+    <ScrollView contentContainerStyle={styles.page}>
+      {/* Header */}
+      <View style={styles.headerRow}>
+        <View>
+          <Text style={styles.h1}>Routes Management</Text>
+          <Text style={styles.subtle}>Manage food cart routes and stops</Text>
+        </View>
+        <Pressable style={styles.btnSolid} onPress={startCreate}>
+          <Feather name="plus" size={16} color="#fff" />
+          <Text style={styles.btnSolidText}>  Add Route</Text>
+        </Pressable>
+      </View>
 
-      <FlatList
-        data={routes}
-        keyExtractor={(i) => i.id}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.headerRow}>
-              <Text style={styles.title}>{item.name}</Text>
-              <View
-                style={[
-                  styles.badge,
-                  item.status === "Active" ? styles.badgeGreen : styles.badgeGray,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.badgeText,
-                    item.status === "Active" ? styles.badgeTextOn : styles.badgeTextOff,
-                  ]}
-                >
-                  {item.status}
-                </Text>
+      {/* Overview "table" */}
+      <View style={styles.card}>
+        <View style={[styles.rowBetween, { marginBottom: 8 }]}>
+          <Text style={styles.sectionTitle}>Routes Overview</Text>
+          <Text style={styles.subtleSmall}>All configured routes and their details</Text>
+        </View>
+
+        <View style={styles.listWrap}>
+          {/* Header */}
+          <View style={[styles.tableRow, styles.tableHead]}>
+            <Text style={[styles.th, { flex: 1.8 }]}>Route Name</Text>
+            <Text style={[styles.th, { flex: 1 }]}>Region</Text>
+            <Text style={[styles.th, { flex: 0.9 }]}>Stops</Text>
+            <Text style={[styles.th, { flex: 1 }]}>Status</Text>
+            <Text style={[styles.th, { flex: 1, textAlign: "right" }]}>Actions</Text>
+          </View>
+
+          {/* Body */}
+          {routes.map((r, i) => (
+            <View key={r.id} style={[styles.tableRow, i < routes.length - 1 ? styles.tableDivider : null]}>
+              <Text style={[styles.td, { flex: 1.8, fontWeight: "700" }]}>{r.name}</Text>
+              <Text style={[styles.td, { flex: 1 }]}>{r.region}</Text>
+              <Text style={[styles.td, { flex: 0.9 }]}>{r.stops.length} stops</Text>
+              <View style={[styles.tdContainer, { flex: 1 }]}>
+                <Badge text={r.status} tone={r.status === "Active" ? "green" : "gray"} />
               </View>
-            </View>
-            <Text style={styles.subtle}>
-              Rider: {item.rider} · {item.duration} · Updated {item.lastUpdate}
-            </Text>
-
-            <View style={{ gap: 8, marginTop: 8 }}>
-              <Text style={{ fontWeight: "700" }}>Stops</Text>
-
-              {item.stops.map((s) => (
-                <View key={s.id} style={styles.rowBetween}>
-                  <Text>• {s.name}</Text>
-                  <Pressable
-                    style={styles.iconBtn}
-                    onPress={() => removeStop(item.id, s.id)}
-                  >
-                    <Feather name="x" size={14} />
-                  </Pressable>
-                </View>
-              ))}
-
-              <View style={styles.row}>
-                <TextInput
-                  placeholder="New stop name"
-                  value={newStopName}
-                  onChangeText={setNewStopName}
-                  style={styles.input}
-                />
-                <Pressable style={styles.btnSolid} onPress={() => addStop(item.id)}>
-                  <Feather name="plus" size={16} color="#fff" />
-                  <Text style={{ color: "#fff", fontWeight: "600", marginLeft: 6 }}>
-                    Add Stop
-                  </Text>
+              <View style={[styles.tdContainer, { flex: 1, alignItems: "flex-end" }]}>
+                <Pressable style={styles.btnOutlineSm} onPress={() => startEdit(r)}>
+                  <Text>Edit</Text>
                 </Pressable>
               </View>
+            </View>
+          ))}
+        </View>
+      </View>
 
-              {/* Map placeholder: later we’ll drop in react-native-maps here */}
-              <View style={styles.mapStub}>
-                <Text style={{ color: "#6b7280" }}>
-                  Map preview goes here (react-native-maps).
-                </Text>
+      {/* Cards per route */}
+      <View style={{ gap: 12 }}>
+        {routes.map(route => (
+          <View key={route.id} style={styles.card}>
+            <View style={[styles.rowBetween, { marginBottom: 8 }]}>
+              <View>
+                <Text style={{ fontSize: 16, fontWeight: "800" }}>{route.name}</Text>
+                <View style={[styles.row, { gap: 12, marginTop: 4 }]}>
+                  <Text style={styles.subtleSmall}><Feather name="user" size={12} /> {route.rider}</Text>
+                  <Text style={styles.subtleSmall}><Feather name="clock" size={12} /> {route.duration}</Text>
+                </View>
+              </View>
+              <View style={[styles.row, { gap: 8, alignItems: "center" }]}>
+                <Badge text={route.status} tone={route.status === "Active" ? "green" : "gray"} />
+                <Pressable style={styles.btnOutlineSm} onPress={() => startEdit(route)}>
+                  <Text>Edit</Text>
+                </Pressable>
+              </View>
+            </View>
+
+            <View style={{ gap: 8 }}>
+              <View>
+                <View style={[styles.row, { gap: 6, alignItems: "center", marginBottom: 6 }]}>
+                  <Feather name="map-pin" size={14} />
+                  <Text style={{ fontWeight: "700" }}>Route Stops</Text>
+                </View>
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                  {route.stops.map((stop, idx) => (
+                    <View key={idx} style={styles.stopPill}>
+                      <View style={styles.stopIndex}><Text style={{ color: "#fff", fontSize: 10, fontWeight: "800" }}>{idx + 1}</Text></View>
+                      <Text>{stop}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.rowBetween}>
+                <Text style={styles.subtleSmall}>Last updated: {route.lastUpdate}</Text>
+                <Text style={styles.subtleSmall}>{route.stops.length} stops total</Text>
               </View>
             </View>
           </View>
-        )}
-        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-      />
+        ))}
+      </View>
+
+      {/* Create/Edit Modal */}
+      <Modal transparent visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
+        <View style={styles.backdrop}>
+          <View style={[styles.card, { padding: 16, gap: 12, maxHeight: "90%", width: "100%" }]}>
+            <View>
+              <View style={[styles.row, { alignItems: "center", gap: 8 }]}>
+                <Feather name="map" size={18} />
+                <Text style={{ fontSize: 18, fontWeight: "800" }}>
+                  {editing ? "Edit Route" : "Create New Route"}
+                </Text>
+              </View>
+              <Text style={styles.subtle}>
+                Add a new route with multiple stops using manual entry or map.
+              </Text>
+            </View>
+
+            <ScrollView contentContainerStyle={{ gap: 12 }}>
+              {/* Top row */}
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <View style={[styles.field, { flex: 1 }]}>
+                  <Text style={styles.label}>Route Name</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={routeName}
+                    onChangeText={setRouteName}
+                    placeholder="Enter route name"
+                  />
+                </View>
+                <View style={[styles.field, { flex: 1 }]}>
+                  <Text style={styles.label}>Assigned Region</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={region}
+                    onChangeText={setRegion}
+                    placeholder="Enter region name"
+                  />
+                </View>
+              </View>
+
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <View style={[styles.field, { flex: 1 }]}>
+                  <Text style={styles.label}>Assign Rider (optional)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={rider}
+                    onChangeText={setRider}
+                    placeholder="e.g., John Smith"
+                  />
+                </View>
+              </View>
+
+              {/* Tabs */}
+              <View style={styles.tabsBar}>
+                <Pressable onPress={() => setTab("manual")} style={[styles.tabBtn, tab === "manual" && styles.tabBtnActive]}>
+                  <Text style={[styles.tabText, tab === "manual" && styles.tabTextActive]}>Manual Entry</Text>
+                </Pressable>
+                <Pressable onPress={() => setTab("map")} style={[styles.tabBtn, tab === "map" && styles.tabBtnActive]}>
+                  <Text style={[styles.tabText, tab === "map" && styles.tabTextActive]}>Interactive Map</Text>
+                </Pressable>
+              </View>
+
+              {tab === "manual" ? (
+                <View style={{ gap: 10 }}>
+                  <View style={styles.rowBetween}>
+                    <Text style={styles.label}>Route Stops</Text>
+                    <Pressable style={styles.btnOutlineSm} onPress={addStop}>
+                      <Feather name="plus" size={14} /><Text>  Add</Text>
+                    </Pressable>
+                  </View>
+
+                  {stops.map((s, idx) => (
+                    <View key={idx} style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+                      <TextInput
+                        style={[styles.input, { flex: 1 }]}
+                        placeholder={`Stop ${idx + 1}`}
+                        value={s}
+                        onChangeText={(v) => changeStop(idx, v)}
+                      />
+                      {stops.length > 1 && (
+                        <Pressable style={styles.btnOutlineSm} onPress={() => removeStop(idx)}>
+                          <Feather name="x" size={14} /><Text>  Remove</Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={{ gap: 8 }}>
+                  <Text style={styles.label}>Map (placeholder)</Text>
+                  <View style={styles.mapStub}>
+                    <Text style={styles.subtleSmall}>
+                      Drop a real map here later (e.g., react-native-maps). For now, use Manual Entry to add stops.
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Actions */}
+              <View style={[styles.row, { justifyContent: "flex-end", gap: 8, paddingTop: 8 }]}>
+                <Pressable style={styles.btnOutline} onPress={() => { setOpen(false); resetForm(); }}>
+                  <Text>Cancel</Text>
+                </Pressable>
+                <Pressable style={[styles.btnSolid, !canSave && { opacity: 0.5 }]} disabled={!canSave} onPress={save}>
+                  <Text style={styles.btnSolidText}>{editing ? "Save Route" : "Create Route"}</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
 
+/** ---------- Small UI bits ---------- */
+function Badge({ text, tone }: { text: string; tone: "green" | "gray" }) {
+  const c = tone === "green" ? "#10b981" : "#9ca3af";
+  const t = tone === "green" ? "#065f46" : "#374151";
+  return (
+    <View style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, backgroundColor: `${c}22`, borderWidth: 1, borderColor: `${c}55` }}>
+      <Text style={{ color: t, fontWeight: "700", fontSize: 12 }}>{text}</Text>
+    </View>
+  );
+}
+
+/** ---------- Styles ---------- */
 const styles = StyleSheet.create({
-  h1: { fontSize: 24, fontWeight: "700" },
-  subtle: { color: "#6b7280", marginBottom: 8 },
+  page: { padding: 16, gap: 12, paddingBottom: 32 },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  h1: { fontSize: 22, fontWeight: "800", color: "#111827" },
+  subtle: { color: "#6b7280" },
+  subtleSmall: { color: "#6b7280", fontSize: 12 },
+
+  row: { flexDirection: "row" },
+  rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
 
   card: {
     backgroundColor: "#fff",
     borderRadius: 14,
     padding: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 6 },
+    borderWidth: 1,
+    borderColor: "#eceff3",
+    shadowColor: "#0f172a",
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 4 },
     shadowRadius: 10,
-    elevation: 3,
+    elevation: 2,
   },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  title: { fontSize: 16, fontWeight: "700" },
+  sectionTitle: { fontSize: 16, fontWeight: "800", color: "#111827" },
 
-  badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    borderWidth: 1,
-    alignSelf: "flex-start",
-  },
-  badgeGreen: { backgroundColor: "#10b98122", borderColor: "#10b98155" },
-  badgeGray: { backgroundColor: "#e5e7eb", borderColor: "#d1d5db" },
-  badgeText: { fontSize: 12, fontWeight: "600" },
-  badgeTextOn: { color: "#065f46" },
-  badgeTextOff: { color: "#374151" },
+  listWrap: { borderWidth: 1, borderColor: "#eef1f5", borderRadius: 12, overflow: "hidden" },
+  tableHead: { backgroundColor: "#f9fafb" },
+  tableRow: { paddingHorizontal: 12, paddingVertical: 10, flexDirection: "row", alignItems: "center" },
+  tableDivider: { borderBottomWidth: 1, borderBottomColor: "#eef1f5" },
+  th: { fontWeight: "800", color: "#111827" },
+  td: { color: "#111827" },
 
-  rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  row: { flexDirection: "row", gap: 8, alignItems: "center" },
-  input: {
+  stopPill: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#f3f4f6", paddingVertical: 8, paddingHorizontal: 10, borderRadius: 12 },
+  stopIndex: { width: 20, height: 20, borderRadius: 999, backgroundColor: "#111827", alignItems: "center", justifyContent: "center" },
+
+  // inputs
+  field: { gap: 6 },
+  label: { fontWeight: "700", color: "#111827" },
+  input: { borderWidth: 1, borderColor: "#d1d5db", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
+
+  // buttons
+  btnSolid: { flexDirection: "row", alignItems: "center", backgroundColor: "#111827", paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
+  btnSolidText: { color: "#fff", fontWeight: "700" },
+  btnOutline: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#d1d5db", paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
+  btnOutlineSm: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#d1d5db", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+
+  // tabs
+  tabsBar: { flexDirection: "row", borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 10, overflow: "hidden" },
+  tabBtn: { flex: 1, paddingVertical: 10, alignItems: "center", backgroundColor: "#fff" },
+  tabBtnActive: { backgroundColor: "#111827" },
+  tabText: { fontWeight: "700", color: "#111827" },
+  tabTextActive: { color: "#fff" },
+
+  // modal
+  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.35)", justifyContent: "center", padding: 16 },
+  mapStub: { borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, padding: 16, backgroundColor: "#f9fafb" },
+
+
+  tdContainer: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    // add any other styles you need for the container
   },
 
-  iconBtn: {
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
 
-  btnSolid: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#111827",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
 
-  mapStub: {
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-  },
+
+
 });
