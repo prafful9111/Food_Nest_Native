@@ -15,6 +15,10 @@ export default function SuperAdminLayout() {
       <Drawer.Screen name="routes-management" options={{ title: "Routes Management" }} />
       <Drawer.Screen name="team-management" options={{ title: "Team Management" }} />
       <Drawer.Screen name="combos-management" options={{ title: "Combos Management" }} />
+      <Drawer.Screen name="vehicles-management" options={{ title: "Vehicles Management" }} />
+      <Drawer.Screen name="analytics" options={{ title: "Analytics" }} />
+
+
 
     </Drawer>
   );

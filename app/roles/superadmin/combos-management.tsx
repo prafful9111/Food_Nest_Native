@@ -256,8 +256,5 @@ const styles = StyleSheet.create({
   btnSolidText: { color: "#fff", fontWeight: "700" },
   btnOutline: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#d1d5db", paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
   btnOutlineSm: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#d1d5db", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
-  backdrop:{
-    justifyContent: "center",
-    padding: 16
-  }
+  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.35)", justifyContent: "center", padding: 16 },
 });
