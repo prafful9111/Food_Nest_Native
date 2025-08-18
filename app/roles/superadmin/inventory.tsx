@@ -1,202 +1,334 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
   ScrollView,
-  Modal,
-  TextInput,
   StyleSheet,
-  FlatList,
   Pressable,
-  Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 
-type Row = { id: string; name: string; qty: number; status: "OK" | "Low" | "Out" };
-
-const seed: Row[] = [
-  { id: "1", name: "Buns", qty: 120, status: "OK" },
-  { id: "2", name: "Chicken", qty: 20, status: "Low" },
-  { id: "3", name: "Oil", qty: 0, status: "Out" },
+/* ===== Seed data ===== */
+type Inv = { id: number; name: string; current: number; max: number; unit: string; status: "Critical" | "Low" | "Good"; requests: number };
+const inventoryItems: Inv[] = [
+  { id: 1, name: "Burger Patties", current: 45, max: 100, unit: "pieces", status: "Low",      requests: 2 },
+  { id: 2, name: "Chicken Breast", current: 78, max: 100, unit: "pieces", status: "Good",     requests: 0 },
+  { id: 3, name: "Lettuce",        current: 12, max: 50,  unit: "heads",  status: "Critical", requests: 3 },
+  { id: 4, name: "Tomatoes",       current: 28, max: 40,  unit: "lbs",    status: "Good",     requests: 1 },
+  { id: 5, name: "Burger Buns",    current: 25, max: 80,  unit: "pieces", status: "Low",      requests: 1 },
+  { id: 6, name: "Cheese Slices",  current: 35, max: 60,  unit: "pieces", status: "Good",     requests: 0 },
 ];
 
+type CookRow = { id: number; item: string; status: "Ready" | "Processing"; quantity: number; cook: string };
+const cookStatus: CookRow[] = [
+  { id: 1, item: "Poha",         status: "Ready",      quantity: 25, cook: "Chef Maria" },
+  { id: 2, item: "Vada Pav",     status: "Processing", quantity: 15, cook: "Chef David" },
+  { id: 3, item: "Chai",         status: "Ready",      quantity: 40, cook: "Chef Sarah" },
+  { id: 4, item: "Water Bottle", status: "Processing", quantity: 20, cook: "Chef Maria" },
+];
+
+type RiderLoc = { id: number; rider: string; location: string; route: string; lastUpdate: string; status: "Active" | "Returning" };
+const liveRiderLocations: RiderLoc[] = [
+  { id: 1, rider: "John Smith",    location: "Near Stop 3 - Central Park", route: "Downtown Route A", lastUpdate: "2 min ago",  status: "Active" },
+  { id: 2, rider: "Mike Davis",    location: "Stop 1 - Residential Area A", route: "Suburban Route B", lastUpdate: "5 min ago",  status: "Active" },
+  { id: 3, rider: "Sarah Johnson", location: "Returning to base",           route: "Beach Route C",     lastUpdate: "10 min ago", status: "Returning" },
+];
+
+type Req = { id: number; item: string; quantity: number; cook: string; reason: string; time: string; status: "Pending" | "Approved" | "Rejected" };
+const initRequests: Req[] = [
+  { id: 1, item: "Burger Patties", quantity: 20, cook: "Chef Maria", reason: "High demand in downtown area", time: "2 hours ago", status: "Pending" },
+  { id: 2, item: "Lettuce",        quantity: 15, cook: "Chef David", reason: "Running low on salads",        time: "3 hours ago", status: "Pending" },
+  { id: 3, item: "Tomatoes",       quantity: 10, cook: "Chef Sarah", reason: "Prep for lunch rush",          time: "4 hours ago", status: "Approved" },
+];
+
+/* ===== Helpers ===== */
+const pct = (cur: number, max: number) => (max ? (cur / max) * 100 : 0);
+const statusTone = (s: Inv["status"]) =>
+  s === "Critical" ? "#ef4444" : s === "Low" ? "#f59e0b" : "#10b981";
+const badgeStyle = (bg: string) => ({ backgroundColor: `${bg}22`, borderColor: `${bg}55` });
+
 export default function Inventory() {
-  const [rows, setRows] = useState<Row[]>(seed);
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<Row | null>(null);
+  const [requests, setRequests] = useState(initRequests);
 
-  // form state
-  const [name, setName] = useState("");
-  const [qty, setQty] = useState<string>("");
+  const approve = (id: number) =>
+    setRequests((arr) => arr.map((r) => (r.id === id ? { ...r, status: "Approved" } : r)));
+  const reject = (id: number) =>
+    setRequests((arr) => arr.map((r) => (r.id === id ? { ...r, status: "Rejected" } : r)));
 
-  const reset = () => { setEditing(null); setName(""); setQty(""); };
-
-  const startAdd = () => { reset(); setOpen(true); };
-  const startEdit = (r: Row) => {
-    setEditing(r);
-    setName(r.name);
-    setQty(String(r.qty));
-    setOpen(true);
-  };
-
-  const save = () => {
-    const q = Number(qty);
-    if (!name.trim() || Number.isNaN(q)) {
-      Alert.alert("Enter a valid name and quantity.");
-      return;
-    }
-    const status: Row["status"] = q === 0 ? "Out" : q < 30 ? "Low" : "OK";
-    if (editing) {
-      setRows((arr) => arr.map((x) => (x.id === editing.id ? { ...editing, name, qty: q, status } : x)));
-    } else {
-      setRows((arr) => [...arr, { id: String(Date.now()), name, qty: q, status }]);
-    }
-    setOpen(false);
-    reset();
-  };
-
-  const remove = (id: string) => setRows((arr) => arr.filter((x) => x.id !== id));
+  const gridCook = useMemo(() => {
+    const rows: CookRow[][] = [];
+    for (let i = 0; i < cookStatus.length; i += 2) rows.push(cookStatus.slice(i, i + 2));
+    return rows;
+  }, []);
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
+    <ScrollView contentContainerStyle={styles.page}>
       {/* Header */}
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.h1}>Inventory</Text>
+          <Text style={styles.h1}>Inventory Management</Text>
+          <Text style={styles.subtle}>Monitor stock levels and material requests</Text>
         </View>
-        <Pressable style={styles.addBtn} onPress={startAdd}>
-          <Feather name="plus" size={16} color="#fff" />
-          <Text style={styles.addBtnText}>  Add Item</Text>
-        </Pressable>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <Btn variant="outline" onPress={() => { /* refetch */ }}>
+            <Feather name="refresh-ccw" size={16} /> <Text> Refresh</Text>
+          </Btn>
+          <Btn onPress={() => { /* open add item modal */ }}>
+            <Feather name="plus" size={16} color="#fff" /> <Text style={{ color: "#fff" }}> Add Item</Text>
+          </Btn>
+        </View>
       </View>
 
-      {/* Table-like card */}
-      <View style={styles.card}>
-        <View style={[styles.row, styles.thead]}>
-          <Text style={[styles.cell, styles.bold]}>Item</Text>
-          <Text style={[styles.cell, styles.bold]}>Qty</Text>
-          <Text style={[styles.cell, styles.bold]}>Status</Text>
-          <Text style={[styles.cell, styles.bold, { textAlign: "right" }]}>Actions</Text>
-        </View>
+      {/* ---- Stock Levels (full width row) ---- */}
+      <Card>
+        <CardHeader icon="package" title="Stock Levels" desc="Current inventory status" />
+        <View style={{ gap: 12 }}>
+          {inventoryItems.map((it) => {
+            const color = statusTone(it.status);
+            const p = pct(it.current, it.max);
+            return (
+              <View key={it.id} style={{ gap: 6 }}>
+                <View style={styles.rowBetween}>
+                  <View style={[styles.row, { alignItems: "center", gap: 8 }]}>
+                    <Text style={{ fontWeight: "700" }}>{it.name}</Text>
+                    <View style={[styles.badge, badgeStyle(color)]}>
+                      <Text style={[styles.badgeText, { color }]}>{it.status}</Text>
+                    </View>
+                    {it.requests > 0 && (
+                      <View style={[styles.badge, badgeStyle("#7c3aed")]}>
+                        <Text style={[styles.badgeText, { color: "#7c3aed" }]}>{it.requests} requests</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.subtleSmall}>
+                    {it.current}/{it.max} {it.unit}
+                  </Text>
+                </View>
 
-        <FlatList
-          data={rows}
-          keyExtractor={(i) => i.id}
-          renderItem={({ item }) => (
-            <View style={[styles.row, styles.trow]}>
-              <Text style={styles.cell}>{item.name}</Text>
-              <Text style={styles.cell}>{item.qty}</Text>
-              <View style={[styles.cell, { alignItems: "flex-start" }]}>
+                <View style={styles.progressTrack}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      { width: `${p}%`, backgroundColor: color },
+                    ]}
+                  />
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      </Card>
+
+      {/* ---- Cook Status (full width row) ---- */}
+      <Card>
+        <CardHeader icon="briefcase" title="Cook Status" desc="Current food preparation status" />
+        <View style={{ gap: 10 }}>
+          {gridCook.map((row, i) => (
+            <View key={i} style={styles.row}>
+              {row.map((c) => (
+                <View key={c.id} style={styles.softTile}>
+                  <View style={styles.rowBetween}>
+                    <Text style={{ fontWeight: "700" }}>{c.item}</Text>
+                    <View
+                      style={[
+                        styles.badge,
+                        badgeStyle(c.status === "Ready" ? "#10b981" : "#f59e0b"),
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.badgeText,
+                          { color: c.status === "Ready" ? "#065f46" : "#92400e" },
+                        ]}
+                      >
+                        {c.status}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.rowBetween}>
+                    <Text style={styles.subtleSmall}>{c.cook}</Text>
+                    <Text style={styles.subtleSmall}>{c.quantity} units</Text>
+                  </View>
+                </View>
+              ))}
+              {row.length === 1 && <View style={{ flex: 1 }} />}
+            </View>
+          ))}
+        </View>
+      </Card>
+
+      {/* ---- Live Rider Locations (full width) ---- */}
+      <Card>
+        <CardHeader icon="map-pin" title="Live Rider Locations" desc="Current rider positions and status" />
+        <View style={{ gap: 10 }}>
+          {liveRiderLocations.map((r) => (
+            <View key={r.id} style={styles.softTile}>
+              <View style={styles.rowBetween}>
+                <Text style={{ fontWeight: "700" }}>{r.rider}</Text>
                 <View
                   style={[
                     styles.badge,
-                    item.status === "OK"
-                      ? styles.badgeGreen
-                      : item.status === "Low"
-                      ? styles.badgeAmber
-                      : styles.badgeGray,
+                    badgeStyle(r.status === "Active" ? "#10b981" : "#7c3aed"),
                   ]}
                 >
                   <Text
                     style={[
                       styles.badgeText,
-                      item.status === "OK"
-                        ? styles.badgeTextOn
-                        : styles.badgeTextOff,
+                      { color: r.status === "Active" ? "#065f46" : "#5b21b6" },
                     ]}
                   >
-                    {item.status}
+                    {r.status}
                   </Text>
                 </View>
               </View>
-              <View style={[styles.cell, { flexDirection: "row", justifyContent: "flex-end", gap: 8 }]}>
-                <Pressable style={styles.iconBtn} onPress={() => startEdit(item)}>
-                  <Feather name="edit-2" size={16} />
-                </Pressable>
-                <Pressable style={styles.iconBtn} onPress={() => remove(item.id)}>
-                  <Feather name="trash-2" size={16} />
-                </Pressable>
+              <Text style={styles.subtleSmall}>{r.location}</Text>
+              <View style={styles.rowBetween}>
+                <Text style={styles.subtleSmall}>{r.route}</Text>
+                <Text style={styles.subtleSmall}>Updated {r.lastUpdate}</Text>
               </View>
             </View>
-          )}
-        />
-      </View>
-
-      {/* Modal */}
-      <Modal transparent visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
-        <View style={styles.backdrop}>
-          <View style={[styles.card, { padding: 16, gap: 12 }]}>
-            <Text style={styles.modalTitle}>{editing ? "Edit Item" : "Add Item"}</Text>
-
-            <View style={styles.formRow}>
-              <View style={styles.field}>
-                <Text style={styles.label}>Name</Text>
-                <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="e.g., Buns" />
-              </View>
-              <View style={styles.field}>
-                <Text style={styles.label}>Qty</Text>
-                <TextInput
-                  style={styles.input}
-                  value={qty}
-                  onChangeText={setQty}
-                  keyboardType="number-pad"
-                  placeholder="e.g., 20"
-                />
-              </View>
-            </View>
-
-            <View style={styles.actionsRow}>
-              <Pressable style={styles.btnOutline} onPress={() => setOpen(false)}>
-                <Text>Cancel</Text>
-              </Pressable>
-              <Pressable style={styles.btnSolid} onPress={save}>
-                <Text style={{ color: "#fff", fontWeight: "600" }}>{editing ? "Save" : "Add"}</Text>
-              </Pressable>
-            </View>
-          </View>
+          ))}
         </View>
-      </Modal>
+      </Card>
+
+      {/* ---- Raw Material Requests (full width) ---- */}
+      <Card>
+        <CardHeader icon="alert-triangle" title="Raw Material Requests" desc="Pending requests from cooks" />
+        <View style={{ gap: 10 }}>
+          {requests.map((req) => (
+            <View key={req.id} style={[styles.softTile, { gap: 6 }]}>
+              <View style={styles.rowBetween}>
+                <Text style={{ fontWeight: "700" }}>{req.item}</Text>
+                <View
+                  style={[
+                    styles.badge,
+                    badgeStyle(
+                      req.status === "Approved"
+                        ? "#10b981"
+                        : req.status === "Rejected"
+                        ? "#ef4444"
+                        : "#f59e0b"
+                    ),
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.badgeText,
+                      {
+                        color:
+                          req.status === "Approved"
+                            ? "#065f46"
+                            : req.status === "Rejected"
+                            ? "#991b1b"
+                            : "#92400e",
+                      },
+                    ]}
+                  >
+                    {req.status}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.rowBetween}>
+                <Text style={[styles.subtleSmall, { fontWeight: "600" }]}>
+                  {req.quantity} units
+                </Text>
+                <Text style={styles.subtleSmall}>{req.time}</Text>
+              </View>
+
+              <Text style={styles.subtleSmall}>{req.reason}</Text>
+              <Text style={[styles.subtleSmall, { fontWeight: "600" }]}>{req.cook}</Text>
+
+              {req.status === "Pending" && (
+                <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
+                  <Btn onPress={() => approve(req.id)}>
+                    <Text style={{ color: "#fff", fontWeight: "600" }}>Approve</Text>
+                  </Btn>
+                  <Btn variant="outline" onPress={() => reject(req.id)}>
+                    <Text>Decline</Text>
+                  </Btn>
+                </View>
+              )}
+            </View>
+          ))}
+        </View>
+      </Card>
     </ScrollView>
   );
 }
 
+/* ===== Small primitives ===== */
+function Card({ children, style }: { children: React.ReactNode; style?: any }) {
+  return <View style={[styles.card, style]}>{children}</View>;
+}
+function CardHeader({ icon, title, desc }: { icon: keyof typeof Feather.glyphMap; title: string; desc?: string }) {
+  return (
+    <View style={{ marginBottom: 10 }}>
+      <View style={[styles.row, { alignItems: "center", gap: 8 }]}>
+        <Feather name={icon} size={18} />
+        <Text style={styles.sectionTitle}>{title}</Text>
+      </View>
+      {desc ? <Text style={styles.subtle}>{desc}</Text> : null}
+    </View>
+  );
+}
+function Btn({
+  children,
+  variant = "solid",
+  onPress,
+}: {
+  children: React.ReactNode;
+  variant?: "solid" | "outline";
+  onPress?: () => void;
+}) {
+  if (variant === "outline") {
+    return (
+      <Pressable onPress={onPress} style={styles.btnOutline}>
+        {children}
+      </Pressable>
+    );
+  }
+  return (
+    <Pressable onPress={onPress} style={styles.btnSolid}>
+      {children}
+    </Pressable>
+  );
+}
+
+/* ===== Styles ===== */
 const styles = StyleSheet.create({
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  h1: { fontSize: 24, fontWeight: "700" },
+  page: { padding: 16, gap: 12, paddingBottom: 32 },
+  h1: { fontSize: 22, fontWeight: "800", color: "#111827" },
+  subtle: { color: "#6b7280" },
+  subtleSmall: { color: "#6b7280", fontSize: 12 },
 
-  addBtn: { flexDirection: "row", alignItems: "center", backgroundColor: "#111827", paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
-  addBtnText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
 
-  card: { backgroundColor: "#fff", borderRadius: 14, padding: 12, shadowColor: "#000", shadowOpacity: 0.08, shadowOffset: { width: 0, height: 6 }, shadowRadius: 10, elevation: 3 },
+  row: { flexDirection: "row", gap: 12 },
+  rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
 
-  // table-like
-  row: { flexDirection: "row", alignItems: "center" },
-  thead: { paddingVertical: 8, borderBottomWidth: 1, borderColor: "#e5e7eb" },
-  trow: { paddingVertical: 10, borderBottomWidth: 1, borderColor: "#f3f4f6" },
-  cell: { flex: 1 },
-  bold: { fontWeight: "700" },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#eceff3",
+    shadowColor: "#0f172a",
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  sectionTitle: { fontSize: 16, fontWeight: "800", color: "#111827" },
 
-  // badges
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, borderWidth: 1, alignSelf: "flex-start" },
-  badgeGreen: { backgroundColor: "#10b98122", borderColor: "#10b98155" },
-  badgeAmber: { backgroundColor: "#f59e0b22", borderColor: "#f59e0b55" },
-  badgeGray: { backgroundColor: "#e5e7eb", borderColor: "#d1d5db" },
-  badgeText: { fontSize: 12, fontWeight: "600" },
-  badgeTextOn: { color: "#065f46" },
-  badgeTextOff: { color: "#374151" },
+  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, borderWidth: 1, alignSelf: "flex-start" },
+  badgeText: { fontSize: 12, fontWeight: "700" },
 
-  // modal
-  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.35)", justifyContent: "center", padding: 20 },
-  modalTitle: { fontSize: 18, fontWeight: "700" },
-  formRow: { flexDirection: "row", gap: 12 },
-  field: { flex: 1, gap: 6 },
-  label: { fontWeight: "600", color: "#374151" },
-  input: { borderWidth: 1, borderColor: "#d1d5db", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
+  progressTrack: { height: 8, backgroundColor: "#eef1f5", borderRadius: 999, overflow: "hidden" },
+  progressFill: { height: "100%", borderRadius: 999 },
 
-  actionsRow: { flexDirection: "row", justifyContent: "flex-end", gap: 12, marginTop: 6 },
-  btnOutline: { paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderRadius: 10, borderColor: "#d1d5db" },
-  btnSolid:   { paddingHorizontal: 14, paddingVertical: 10, backgroundColor: "#111827", borderRadius: 10 },
+  softTile: { backgroundColor: "#f3f4f6", borderRadius: 12, padding: 10, flex: 1 },
 
-  // used earlier in User Management; include here so it never errors
-  iconBtn: { borderWidth: 1, borderColor: "#d1d5db", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  btnSolid: { flexDirection: "row", alignItems: "center", backgroundColor: "#111827", paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
+  btnOutline: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#d1d5db", paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
 });
