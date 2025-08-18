@@ -13,6 +13,8 @@ export default function SuperAdminLayout() {
       <Drawer.Screen name="food-items" options={{ title: "Food Items" }} />
       <Drawer.Screen name="inventory" options={{ title: "Inventory" }} />
       <Drawer.Screen name="routes-management" options={{ title: "Routes Management" }} />
+      <Drawer.Screen name="team-management" options={{ title: "Team Management" }} />
+
     </Drawer>
   );
 }
