@@ -3,6 +3,7 @@ import { Drawer } from "expo-router/drawer";
 export default function SuperAdminLayout() {
   return (
     <Drawer
+    
       screenOptions={{
         headerTitle: "SuperAdmin",
       }}
