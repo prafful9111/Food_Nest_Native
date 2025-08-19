@@ -18,10 +18,10 @@ const salesData = [
 ];
 
 const currentInventory = [
-  { name: "Classic Burger", remaining: 8, assigned: 20, status: "low" as const },
-  { name: "Chicken Tacos", remaining: 7, assigned: 15, status: "good" as const },
-  { name: "Fish & Chips", remaining: 4, assigned: 10, status: "critical" as const },
-  { name: "Caesar Salad", remaining: 5, assigned: 8, status: "good" as const },
+  { name: "Classic Burger", remaining: 8, assigned: 20, sold: 12, status: "low" as const },
+  { name: "Chicken Tacos", remaining: 7, assigned: 15, sold: 8, status: "good" as const },
+  { name: "Fish & Chips", remaining: 4, assigned: 10, sold: 6, status: "critical" as const },
+  { name: "Caesar Salad", remaining: 5, assigned: 8, sold: 3, status: "good" as const },
 ];
 
 const recentSales = [
