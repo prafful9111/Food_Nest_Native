@@ -10,7 +10,8 @@ export default function SupervisorLayout() {
     >
       {/* Map file routes to drawer items with nice titles */}
       <Drawer.Screen name="overview" options={{ title: "Supervisor Overview" }} />
-      <Drawer.Screen name="riderlogs" options={{ title: "RiderLogs" }} />
+      <Drawer.Screen name="riderlogs" options={{ title: "Rider Logs" }} />
+      <Drawer.Screen name="assignrider" options={{ title: "Assign Rider" }} />
 
 
 
