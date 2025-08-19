@@ -13,6 +13,7 @@ export default function SupervisorLayout() {
       <Drawer.Screen name="riderlogs" options={{ title: "Rider Logs" }} />
       <Drawer.Screen name="assignrider" options={{ title: "Assign Rider" }} />
       <Drawer.Screen name="viewinvantory" options={{ title: "View Invantory" }} />
+      <Drawer.Screen name="viewroutes" options={{ title: "View Routes" }} />
 
 
 
