@@ -15,6 +15,8 @@ export default function RiderLayout() {
 
       <Drawer.Screen name="carthealth" options={{ title: "Cart Health" }} />  
       <Drawer.Screen name="myroute" options={{ title: "My Route" }} />
+      <Drawer.Screen name="requestmore" options={{ title: "Request More" }} />
+      <Drawer.Screen name ="avialablevehicles" options={{title:"Available Vehicles"}}/>
 
 
 
