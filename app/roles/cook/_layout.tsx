@@ -11,6 +11,8 @@ export default function CookLayout() {
       {/* Map file routes to drawer items with nice titles */}
       <Drawer.Screen name="CookOverview" options={{ title: "Cook Overview" }} />
       <Drawer.Screen name="MyMenu" options={{ title: "My Menu" }} />
+      <Drawer.Screen name="FoodPrepStatus" options={{ title: "Food Prep Status" }} />
+      <Drawer.Screen name="RawMaterialRequests" options={{ title: "Raw Material Requests" }} />
 
 
     </Drawer>
