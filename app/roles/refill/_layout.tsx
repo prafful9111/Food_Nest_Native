@@ -12,6 +12,7 @@ export default function RefillCoordinatorLayout() {
       <Drawer.Screen name="RefillCoordinatorOverview" options={{ title: "Refill Coordinator Overview" }} />
       <Drawer.Screen name="RefillRequests" options={{ title: "Refill Requests" }} />
       <Drawer.Screen name="InventoryStatus" options={{ title: "Inventory Status" }} />
+      <Drawer.Screen name="CookCoordination" options={{ title: "Cook Coordination" }} />
 
 
 
