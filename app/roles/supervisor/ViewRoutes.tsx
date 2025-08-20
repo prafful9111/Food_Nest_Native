@@ -33,7 +33,7 @@ const routes: RouteInfo[] = [
   {
     id: 2,
     name: "Suburban B",
-    rider: "Mike Davis",
+    rider: "Mark Devin",
     status: "Active",
     currentStop: "Community Center",
     progress: 1,
