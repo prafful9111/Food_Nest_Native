@@ -11,6 +11,7 @@ export default function RefillCoordinatorLayout() {
       {/* Map file routes to drawer items with nice titles */}
       <Drawer.Screen name="RefillCoordinatorOverview" options={{ title: "Refill Coordinator Overview" }} />
       <Drawer.Screen name="RefillRequests" options={{ title: "Refill Requests" }} />
+      <Drawer.Screen name="InventoryStatus" options={{ title: "Inventory Status" }} />
 
 
 
