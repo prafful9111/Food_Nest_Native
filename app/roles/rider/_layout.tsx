@@ -5,7 +5,7 @@ export default function RiderLayout() {
     <Drawer
     
       screenOptions={{
-        headerTitle: "rider",
+        headerTitle: "Rider",
       }}
     >
       {/* Map file routes to drawer items with nice titles */}
