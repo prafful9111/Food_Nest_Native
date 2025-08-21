@@ -1,6 +1,8 @@
 import React from "react";
-import { View, Text, ScrollView, StyleSheet } from "react-native";
+import { View, Text, ScrollView, StyleSheet, Pressable } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { signOut } from "@/lib/authStore";
 
 type Analytic = {
   title: string;
@@ -9,7 +11,6 @@ type Analytic = {
   icon: keyof typeof Feather.glyphMap;
   color: "success" | "primary" | "warning" | "accent";
 };
-
 
 const analytics: Analytic[] = [
   { title: "Total Sales", value: "฿12,450", change: "+12.5%", icon: "trending-up", color: "success" },
@@ -24,12 +25,26 @@ const toINR = (thbWithSymbol: string) => {
 };
 
 export default function SuperAdminOverview() {
+  const router = useRouter();
+
+  const handleSignOut = () => {
+    signOut();
+    router.replace("/(auth)/login"); // go straight to Login
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.page}>
-      {/* Header */}
-      <View>
-        <Text style={styles.h1}>Dashboard Overview</Text>
-        <Text style={styles.subtle}>Monitor your food cart operations</Text>
+      {/* Header with Sign out */}
+      <View style={styles.headerRow}>
+        <View>
+          <Text style={styles.h1}>Dashboard Overview</Text>
+          <Text style={styles.subtle}>Monitor your food cart operations</Text>
+        </View>
+
+        <Pressable onPress={handleSignOut} style={styles.signoutBtn}>
+          <Feather name="log-out" size={16} color="#fff" />
+          <Text style={styles.signoutText}>Sign out</Text>
+        </Pressable>
       </View>
 
       {/* Analytics grid */}
@@ -132,9 +147,6 @@ function ListCard({
         ))}
       </View>
     </View>
-
-
-
   );
 }
 
@@ -157,11 +169,28 @@ function chunk<T>(arr: T[], size: number) {
 const styles = StyleSheet.create({
   page: { padding: 16, gap: 16, paddingBottom: 32, backgroundColor: "#f9fafb" },
 
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
   h1: { fontSize: 22, fontWeight: "800", color: "#111827" },
   subtle: { color: "#6b7280" },
   subtleSmall: { color: "#6b7280", fontSize: 12 },
 
   row: { flexDirection: "row" },
+
+  signoutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#ef4444",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+  signoutText: { color: "#fff", fontWeight: "700" },
 
   card: {
     flex: 1,
