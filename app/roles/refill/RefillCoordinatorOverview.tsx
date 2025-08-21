@@ -11,6 +11,9 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 
+import { useRouter } from "expo-router";          // ✅ expo-router
+import { signOut } from "@/lib/authStore"; 
+
 /* ---------- Types ---------- */
 type Priority = "high" | "medium" | "low";
 type InvStatus = "critical" | "low" | "good";
@@ -102,6 +105,13 @@ const priorityColors = (p: Priority) => {
 
 /* ---------- Screen ---------- */
 export default function RefillCoordinatorOverviewScreen() {
+
+      const router = useRouter();
+  
+    const handleSignOut = () => {
+      signOut();                        // clear session/token
+      router.replace("/(auth)/login");  // go to Login screen
+    };
   const handleFulfill = (rider: string, item: string) => {
     Alert.alert("Fulfillment started", `Assigning refill for ${rider} • ${item}`);
   };
@@ -115,6 +125,11 @@ export default function RefillCoordinatorOverviewScreen() {
           Manage refill requests and coordinate with kitchen
         </Text>
       </View>
+
+              <Pressable onPress={handleSignOut} style={styles.signoutBtn}>
+                <Feather name="log-out" size={16} color="#fff" />
+                <Text style={styles.signoutText}>Sign out</Text>
+              </Pressable>
 
       {/* Inline SOS button */}
       <Pressable
@@ -362,4 +377,14 @@ const styles = StyleSheet.create({
   invMeta: { color: "#6b7280", fontSize: 12 },
   barBg: { backgroundColor: "#e5e7eb", height: 8, borderRadius: 999, overflow: "hidden" },
   barFill: { height: 8, borderRadius: 999 },
+      signoutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#ef4444",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+  signoutText: { color: "#fff", fontWeight: "700" },
 });
