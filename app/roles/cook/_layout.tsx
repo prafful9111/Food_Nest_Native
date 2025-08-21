@@ -1,6 +1,23 @@
 import { Drawer } from "expo-router/drawer";
+import { useRouter } from "expo-router";
+import { getUser, onAuthChange } from "@/lib/authStore";
+
+import { useEffect } from "react";
+
 
 export default function CookLayout() {
+
+const router = useRouter();
+
+useEffect(() => {
+  const check = () => {
+    const u = getUser();
+    if (!u) return router.replace("/(auth)/login");
+    if (u.role !== "cook") router.replace("/");
+  };
+  const un = onAuthChange(check); check(); return un;
+}, [router]);
+
   return (
     <Drawer
     
