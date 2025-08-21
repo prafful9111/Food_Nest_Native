@@ -1,30 +1,26 @@
-import { View, Text, Pressable } from "react-native";
-import { router } from "expo-router";
-
-function NavButton({ to, label }: { to: string; label: string }) {
-  return (
-    <Pressable
-      onPress={() => router.push(to as any)}  // cast here to avoid TS route typing noise
-      style={{ padding: 14, borderRadius: 10, borderWidth: 1, marginVertical: 6 }}
-    >
-      <Text style={{ fontSize: 18, textAlign: "center" }}>{label}</Text>
-    </Pressable>
-  );
-}
+// app/index.tsx
+import { useEffect, useState } from "react";
+import { Redirect } from "expo-router";
+import { getUser, onAuthChange } from "@/lib/authStore";
 
 export default function Index() {
-  return (
-    <View style={{ flex: 1, justifyContent: "center", padding: 24 }}>
-      <Text style={{ fontSize: 24, textAlign: "center", marginBottom: 16 }}>
-        FoodNest Native 🚀
-      </Text>
+  const [user, setUser] = useState(getUser());
 
-      {/* NOTE: every path starts with a leading slash → absolute route */}
-      <NavButton to="/roles/superadmin" label="SuperAdmin" />
-      <NavButton to="/roles/supervisor" label="Supervisor" />
-      <NavButton to="/roles/rider" label="Rider" />
-      <NavButton to="/roles/cook" label="Cook" />
-      <NavButton to="/roles/refill" label="Refill Coordinator" />
-    </View>
-  );
+  useEffect(() => {
+    return onAuthChange(() => setUser(getUser()));
+  }, []);
+
+  if (!user) return <Redirect href="/(auth)/login" />;
+
+  if (user.role === "superadmin") {
+    return <Redirect href="/roles/superadmin/overview" />;
+  } else if (user.role === "rider") {
+    return <Redirect href="/roles/rider/RiderOverview" />;
+  } else if (user.role === "cook") {
+    return <Redirect href="/roles/cook/CookOverview" />;
+  } else if (user.role === "supervisor") {
+    return <Redirect href="/roles/supervisor/SupervisorOverview" />;
+  } else {
+    return <Redirect href="/roles/refill/RefillCoordinatorOverview" />;
+  }
 }

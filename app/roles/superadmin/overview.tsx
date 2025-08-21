@@ -10,6 +10,7 @@ type Analytic = {
   color: "success" | "primary" | "warning" | "accent";
 };
 
+
 const analytics: Analytic[] = [
   { title: "Total Sales", value: "฿12,450", change: "+12.5%", icon: "trending-up", color: "success" },
   { title: "Active Routes", value: "8", change: "+2", icon: "navigation-2", color: "primary" },
@@ -131,6 +132,9 @@ function ListCard({
         ))}
       </View>
     </View>
+
+
+
   );
 }
 
