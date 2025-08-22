@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -10,16 +10,18 @@ import {
   FlatList,
   Alert,
   Switch,
+  ActivityIndicator,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { api } from "@/lib/api"; // <— added (uses your API base + token)
 
+/* ======== Your existing types (unchanged) ======== */
 type User = {
   id: string;
   name: string;
   email: string;
   role: "Rider" | "Cook" | "Supervisor" | "Refill Coordinator" | "Admin" | "Kitchen Helper";
   status: "Active" | "Inactive";
-  // optional payroll fields (kept for parity with web)
   currency?: "THB" | "INR" | "USD";
   baseSalary?: number;
   payFrequency?: "Monthly" | "Weekly" | "Daily" | "Hourly";
@@ -40,6 +42,18 @@ type User = {
   notes?: string;
 };
 
+/* ======== NEW: types + helpers for requests ======== */
+type ApiRole = "rider" | "cook" | "supervisor" | "refill" | "superadmin";
+type RequestItem = { _id: string; email: string; name: string; role: ApiRole; createdAt?: string };
+
+const toUiRole = (r: ApiRole): User["role"] =>
+  r === "rider" ? "Rider" :
+  r === "cook" ? "Cook" :
+  r === "supervisor" ? "Supervisor" :
+  r === "refill" ? "Refill Coordinator" :
+  "Admin";
+
+/* ======== Your existing seed (unchanged) ======== */
 const seed: User[] = [
   { id: "1", name: "John Smith",  email: "john@foodcart.com",  role: "Rider",              status: "Active" },
   { id: "2", name: "Sarah Khan",  email: "sarah@foodcart.com", role: "Cook",               status: "Active" },
@@ -48,6 +62,7 @@ const seed: User[] = [
 ];
 
 export default function UserManagement() {
+  /* ======== Your existing state (unchanged) ======== */
   const [users, setUsers] = useState<User[]>(seed);
   const [open, setOpen] = useState(false);
   const [editing, setEdit] = useState<User | null>(null);
@@ -153,6 +168,51 @@ export default function UserManagement() {
 
   const remove = (id: string) => setUsers(arr => arr.filter(x => x.id !== id));
 
+  /* ======== NEW: pending registration requests ======== */
+  const [requests, setRequests] = useState<RequestItem[]>([]);
+  const [reqLoading, setReqLoading] = useState(false);
+
+  const loadRequests = async () => {
+    setReqLoading(true);
+    try {
+      const res = await api.get<{ items: RequestItem[] }>("/api/admin/requests");
+      setRequests(res.items || []);
+    } catch (e: any) {
+      Alert.alert("Could not load registration requests", e.message || "Unknown error");
+    } finally {
+      setReqLoading(false);
+    }
+  };
+
+  const approve = async (id: string) => {
+    try {
+      const res = await api.post<{ ok: true; user: { id: string; email: string; name: string; role: ApiRole } }>(
+        `/api/admin/requests/${id}/approve`
+      );
+      setRequests(arr => arr.filter(r => r._id !== id));
+      // append the newly created user into your table
+      setUsers(arr => [
+        { id: res.user.id, name: res.user.name, email: res.user.email, role: toUiRole(res.user.role), status: "Active" },
+        ...arr,
+      ]);
+      Alert.alert("Approved", `${res.user.name} added as ${toUiRole(res.user.role)}.`);
+    } catch (e: any) {
+      Alert.alert("Approve failed", e.message || "Unknown error");
+    }
+  };
+
+  const decline = async (id: string) => {
+    try {
+      await api.post(`/api/admin/requests/${id}/decline`);
+      setRequests(arr => arr.filter(r => r._id !== id));
+    } catch (e: any) {
+      Alert.alert("Decline failed", e.message || "Unknown error");
+    }
+  };
+
+  useEffect(() => { loadRequests(); }, []);
+
+  /* ======== UI ======== */
   return (
     <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
       {/* Header */}
@@ -162,14 +222,51 @@ export default function UserManagement() {
           <Text style={styles.subtle}>Manage system users and their roles</Text>
         </View>
 
-        {/* Add User button (mirrors web DialogTrigger → Dialog) */}
+        {/* Add User button */}
         <Pressable style={styles.addBtn} onPress={startAdd}>
           <Feather name="plus" size={16} color="#fff" />
           <Text style={styles.addBtnText}>  Add User</Text>
         </Pressable>
       </View>
 
-      {/* Table-like list */}
+      {/* ======== NEW: Pending Registration Requests card ======== */}
+      <View style={styles.card}>
+        <View style={[styles.row, { justifyContent: "space-between", alignItems: "center", marginBottom: 8 }]}>
+          <View>
+            <Text style={{ fontSize: 16, fontWeight: "700" }}>Pending Registration Requests</Text>
+            <Text style={styles.subtle}>Approve or decline incoming user registrations</Text>
+          </View>
+          <Pressable onPress={loadRequests} style={[styles.iconBtn, { paddingHorizontal: 12, paddingVertical: 8 }]}>
+            {reqLoading ? <ActivityIndicator /> : <Feather name="refresh-ccw" size={16} />}
+          </Pressable>
+        </View>
+
+        {requests.length === 0 ? (
+          <Text style={styles.subtle}>No pending requests.</Text>
+        ) : (
+          <View style={{ gap: 10 }}>
+            {requests.map((r) => (
+              <View key={r._id} style={[styles.row, styles.reqRow]}>
+                <View style={{ flex: 1.6 }}>
+                  <Text style={{ fontWeight: "700" }}>{r.name}</Text>
+                  <Text style={styles.subtle}>{r.email}</Text>
+                </View>
+                <Text style={{ flex: 1, fontWeight: "600" }}>{toUiRole(r.role)}</Text>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <Pressable onPress={() => approve(r._id)} style={[styles.pillBtn, { backgroundColor: "#2e7d32" }]}>
+                    <Text style={{ color: "#fff", fontWeight: "700" }}>Approve</Text>
+                  </Pressable>
+                  <Pressable onPress={() => decline(r._id)} style={[styles.pillBtn, { backgroundColor: "#c62828" }]}>
+                    <Text style={{ color: "#fff", fontWeight: "700" }}>Decline</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+
+      {/* Table-like list (your original) */}
       <View style={styles.card}>
         <View style={[styles.row, styles.thead]}>
           <Text style={[styles.cellName, styles.bold]}>Name</Text>
@@ -182,6 +279,7 @@ export default function UserManagement() {
         <FlatList
           data={users}
           keyExtractor={(i) => i.id}
+          scrollEnabled={false}        // keeps your ScrollView driving the scroll
           renderItem={({ item }) => (
             <View style={[styles.row, styles.trow]}>
               <Text style={styles.cellName}>{item.name}</Text>
@@ -214,7 +312,7 @@ export default function UserManagement() {
         />
       </View>
 
-      {/* Add/Edit Modal — fields mirror web dialog */}
+      {/* Add/Edit Modal — (your original) */}
       <Modal transparent visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
         <View style={styles.backdrop}>
           <View style={[styles.card, { padding: 16, gap: 12, maxHeight: "90%" }]}>
@@ -378,6 +476,7 @@ export default function UserManagement() {
   );
 }
 
+/* ======== Styles (yours + tiny additions for requests) ======== */
 const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   h1: { fontSize: 24, fontWeight: "700" },
@@ -419,18 +518,19 @@ const styles = StyleSheet.create({
 
   bankBox: { backgroundColor: "#f3f4f6", padding: 12, borderRadius: 10 },
   iconBtn: { padding: 8, backgroundColor: "#f0f0f0", borderRadius: 6, alignItems: "center", justifyContent: "center" },
+
   sectionSplit: {
-    // define the styles for sectionSplit here
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
     marginBottom: 16,
   },
-
   sectionTitle: {
-    // define the styles for sectionTitle here
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 8,
   },
 
+  /* NEW: request rows and buttons */
+  reqRow: { paddingVertical: 10, borderTopWidth: 1, borderColor: "#eef1f5", justifyContent: "space-between" },
+  pillBtn: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999 },
 });
