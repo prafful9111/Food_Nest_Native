@@ -125,28 +125,33 @@ export default function UserManagement() {
   };
 
   const startAdd = () => { reset(); setOpen(true); };
-  const startEdit = (u: User) => {
+  const startEdit = async (u: User) => {
     setEdit(u);
-    setName(u.name); setEmail(u.email);
-    setRole(u.role); setStatus(u.status);
-    setCurrency(u.currency ?? "");
-    setBaseSalary(u.baseSalary != null ? String(u.baseSalary) : "");
-    setPayFrequency(u.payFrequency ?? "");
-    setEmploymentType(u.employmentType ?? "");
-    setVat(u.vat != null ? String(u.vat) : "");
-    setEffectiveFrom(u.effectiveFrom ?? "");
-    setOtEligible(!!u.otEligible);
-    setOtRate(u.otRate != null ? String(u.otRate) : "");
-    setAllowances(u.allowances != null ? String(u.allowances) : "");
-    setDeductions(u.deductions != null ? String(u.deductions) : "");
-    setTaxId(u.taxId ?? "");
-    setBankHolder(u.bank?.holder ?? "");
-    setBankAccount(u.bank?.account ?? "");
-    setBankName(u.bank?.bankName ?? "");
-    setIfsc(u.bank?.ifsc ?? "");
-    setNotes(u.notes ?? "");
-    setPassword(""); // create-only
     setOpen(true);
+    try {
+      const res = await getUserApi(u.id);
+      setName(res.name); setEmail(res.email);
+      setRole(toUiRole(res.role)); setStatus(res.status);
+      setCurrency(res.currency ?? "");
+      setBaseSalary(res.baseSalary != null ? String(res.baseSalary) : "");
+      setPayFrequency(res.payFrequency ?? "");
+      setEmploymentType(res.employmentType ?? "");
+      setVat(res.vat != null ? String(res.vat) : "");
+      setEffectiveFrom(fmtDate(res.effectiveFrom));
+      setOtEligible(!!res.otEligible);
+      setOtRate(res.otRate != null ? String(res.otRate) : "");
+      setAllowances(res.allowances != null ? String(res.allowances) : "");
+      setDeductions(res.deductions != null ? String(res.deductions) : "");
+      setTaxId(res.taxId ?? "");
+      setBankHolder(res.bank?.holder ?? "");
+      setBankAccount(res.bank?.account ?? "");
+      setBankName(res.bank?.bankName ?? "");
+      setIfsc(res.bank?.ifsc ?? "");
+      setNotes(res.notes ?? "");
+      setPassword("");
+    } catch (e: any) {
+      Alert.alert("Load user failed", e.message || "Unknown error");
+    }
   };
 
   /* ------------ API helpers ------------ */
@@ -203,7 +208,16 @@ export default function UserManagement() {
 
   const patchUserApi = async (
     id: string,
-    body: Partial<{ name: string; email: string; role: ApiRole; disabled: boolean }>
+    body: Partial<{
+      name: string; email: string; role: ApiRole; disabled: boolean;
+      currency: "THB" | "INR" | "USD";
+      baseSalary: number; payFrequency: "Monthly" | "Weekly" | "Daily" | "Hourly";
+      employmentType: "Full-time" | "Part-time" | "Contract" | "Gig / On-demand";
+      vat: number; effectiveFrom: string; otEligible: boolean; otRate: number;
+      allowances: number; deductions: number; taxId: string;
+      bank: { holder?: string; account?: string; bankName?: string; ifsc?: string };
+      notes: string;
+    }>
   ) => api.patch<{ ok: true; user: { id: string; name: string; email: string; role: ApiRole; status: "Active" | "Inactive" } }>(
       `/api/admin/users/${id}`, body
     );
@@ -211,11 +225,87 @@ export default function UserManagement() {
   const deleteUserApi = async (id: string) =>
     api.delete<{ ok: true }>(`/api/admin/users/${id}`);
 
-  const createUserApi = async (body: { name: string; email: string; role: ApiRole; password: string }) =>
+  const getUserApi = async (id: string) =>
+    api.get<{
+      id: string;
+      name: string;
+      email: string;
+      role: ApiRole;
+      status: "Active" | "Inactive";
+      currency?: "THB" | "INR" | "USD";
+      baseSalary?: number;
+      payFrequency?: "Monthly" | "Weekly" | "Daily" | "Hourly";
+      employmentType?: "Full-time" | "Part-time" | "Contract" | "Gig / On-demand";
+      vat?: number;
+      effectiveFrom?: string;
+      otEligible?: boolean;
+      otRate?: number;
+      allowances?: number;
+      deductions?: number;
+      taxId?: string;
+      bank?: { holder?: string; account?: string; bankName?: string; ifsc?: string };
+      notes?: string;
+    }>(`/api/admin/users/${id}`);
+
+  const fmtDate = (v?: string) => {
+    if (!v) return "";
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+  };
+
+  const createUserApi = async (body: {
+    name: string; email: string; role: ApiRole; password: string;
+    currency?: "THB" | "INR" | "USD";
+    baseSalary?: number; payFrequency?: "Monthly" | "Weekly" | "Daily" | "Hourly";
+    employmentType?: "Full-time" | "Part-time" | "Contract" | "Gig / On-demand";
+    vat?: number; effectiveFrom?: string; otEligible?: boolean; otRate?: number;
+    allowances?: number; deductions?: number; taxId?: string;
+    bank?: { holder?: string; account?: string; bankName?: string; ifsc?: string };
+    notes?: string;
+  }) =>
     api.post<{ ok: true; user: { id: string; name: string; email: string; role: ApiRole; status: "Active" | "Inactive" } }>(
       "/api/admin/users",
       body
     );
+
+  const toNumber = (v: string): number | undefined => {
+    if (v == null) return undefined;
+    const t = String(v).trim();
+    if (t === "") return undefined;
+    const n = Number(t);
+    return Number.isFinite(n) ? n : undefined;
+  };
+
+  const buildPayrollPayload = () => {
+    const bankObj = {
+      holder: bankHolder.trim() || undefined,
+      account: bankAccount.trim() || undefined,
+      bankName: bankName.trim() || undefined,
+      ifsc: ifsc.trim() || undefined,
+    } as { holder?: string; account?: string; bankName?: string; ifsc?: string };
+
+    const payload: any = {
+      currency: (currency || undefined) as any,
+      baseSalary: toNumber(baseSalary),
+      payFrequency: (payFrequency || undefined) as any,
+      employmentType: (employmentType || undefined) as any,
+      vat: toNumber(vat),
+      effectiveFrom: effectiveFrom.trim() || undefined,
+      otEligible,
+      otRate: toNumber(otRate),
+      allowances: toNumber(allowances),
+      deductions: toNumber(deductions),
+      taxId: taxId.trim() || undefined,
+      bank: bankObj,
+      notes: notes.trim() || undefined,
+    };
+
+    // remove empty bank if all undefined
+    if (!bankObj.holder && !bankObj.account && !bankObj.bankName && !bankObj.ifsc) {
+      delete payload.bank;
+    }
+    return payload;
+  };
 
   /* ------------ Save (edit/create) ------------ */
   const save = async () => {
@@ -228,7 +318,11 @@ export default function UserManagement() {
     if (editing) {
       try {
         const res = await patchUserApi(editing.id, {
-          name, email, role: toApiRole(role), disabled: status === "Inactive",
+          name,
+          email,
+          role: toApiRole(role),
+          disabled: status === "Inactive",
+          ...buildPayrollPayload(),
         });
         setUsers(arr =>
           arr.map(x =>
@@ -252,7 +346,7 @@ export default function UserManagement() {
       return;
     }
     try {
-      const res = await createUserApi({ name, email, role: toApiRole(role), password });
+      const res = await createUserApi({ name, email, role: toApiRole(role), password, ...buildPayrollPayload() });
       // Prepend new user
       setUsers(arr => [{ id: res.user.id, name: res.user.name, email: res.user.email, role: toUiRole(res.user.role), status: res.user.status }, ...arr]);
       setOpen(false);
@@ -416,11 +510,11 @@ export default function UserManagement() {
               <View style={styles.formRow}>
                 <View style={styles.field}>
                   <Text style={styles.label}>Role</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Rider / Cook / Supervisor / Admin / Kitchen Helper"
+                  <Select
+                    placeholder="Select a role"
                     value={role}
-                    onChangeText={(t) => setRole(t as User["role"])}
+                    onChange={(v) => setRole(v as User["role"])}
+                    options={["Rider", "Cook", "Supervisor", "Refill Coordinator", "Admin"]}
                   />
                 </View>
               </View>
@@ -457,7 +551,13 @@ export default function UserManagement() {
               <View style={styles.formRow}>
                 <View style={styles.field}>
                   <Text style={styles.label}>Currency</Text>
-                  <TextInput style={styles.input} placeholder="THB / INR / USD" value={currency} onChangeText={(t) => setCurrency(t as any)} />
+                  <Select
+                    placeholder="Select currency"
+                    value={(currency as any) || ""}
+                    onChange={(v) => setCurrency(v as any)}
+                    options={["THB", "INR", "USD"]}
+                    allowClear
+                  />
                 </View>
                 <View style={styles.field}>
                   <Text style={styles.label}>Base Salary</Text>
@@ -468,11 +568,23 @@ export default function UserManagement() {
               <View style={styles.formRow}>
                 <View style={styles.field}>
                   <Text style={styles.label}>Pay Frequency</Text>
-                  <TextInput style={styles.input} placeholder="Monthly / Weekly / Daily / Hourly" value={payFrequency} onChangeText={(t) => setPayFrequency(t as any)} />
+                  <Select
+                    placeholder="Select frequency"
+                    value={(payFrequency as any) || ""}
+                    onChange={(v) => setPayFrequency(v as any)}
+                    options={["Monthly", "Weekly", "Daily", "Hourly"]}
+                    allowClear
+                  />
                 </View>
                 <View style={styles.field}>
                   <Text style={styles.label}>Employment Type</Text>
-                  <TextInput style={styles.input} placeholder="Full-time / Part-time / Contract / Gig" value={employmentType} onChangeText={(t) => setEmploymentType(t as any)} />
+                  <Select
+                    placeholder="Select employment type"
+                    value={(employmentType as any) || ""}
+                    onChange={(v) => setEmploymentType(v as any)}
+                    options={["Full-time", "Part-time", "Contract", "Gig / On-demand"]}
+                    allowClear
+                  />
                 </View>
               </View>
 
@@ -602,6 +714,7 @@ const styles = StyleSheet.create({
   field: { flex: 1, gap: 6 },
   label: { fontWeight: "600", color: "#374151" },
   input: { borderWidth: 1, borderColor: "#d1d5db", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
+  select: { borderWidth: 1, borderColor: "#d1d5db", borderRadius: 10 },
 
   actionsRow: { flexDirection: "row", justifyContent: "flex-end", gap: 12, marginTop: 6 },
   btnOutline: { paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderRadius: 10, borderColor: "#d1d5db" },
@@ -616,3 +729,34 @@ const styles = StyleSheet.create({
   reqRow: { paddingVertical: 10, borderTopWidth: 1, borderColor: "#eef1f5", justifyContent: "space-between" },
   pillBtn: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999 },
 });
+
+/* Simple inline Select using native picker-like behavior */
+type SelectProps = {
+  placeholder?: string;
+  value: string;
+  options: string[];
+  onChange: (v: string) => void;
+  allowClear?: boolean;
+};
+
+const Select = ({ placeholder, value, options, onChange, allowClear }: SelectProps) => {
+  return (
+    <View style={{ borderWidth: 1, borderColor: "#d1d5db", borderRadius: 10 }}>
+      <Pressable
+        onPress={() => {
+          // Fallback: simple ActionSheet-like prompt using Alert with quick choices
+          const buttons = [
+            ...options.map((opt) => ({ text: opt, onPress: () => onChange(opt) })),
+            ...(allowClear ? [{ text: "Clear", onPress: () => onChange("") }] : []),
+            { text: "Cancel", style: "cancel" as const },
+          ];
+          Alert.alert(placeholder || "Select", "", buttons);
+        }}
+        style={{ paddingHorizontal: 12, paddingVertical: 10, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
+      >
+        <Text style={{ color: value ? "#111827" : "#6b7280" }}>{value || placeholder || "Select"}</Text>
+        <Feather name="chevron-down" size={16} color="#6b7280" />
+      </Pressable>
+    </View>
+  );
+};
