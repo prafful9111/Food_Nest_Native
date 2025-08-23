@@ -30,13 +30,69 @@ const handleSignOut = () => {
       }}
     >
       {/* Map file routes to drawer items with nice titles */}
-      <Drawer.Screen name="CookOverview" options={{ title: "Cook Overview" }} />
-      <Drawer.Screen name="MyMenu" options={{ title: "My Menu" }} />
-      <Drawer.Screen name="FoodPrepStatus" options={{ title: "Food Prep Status" }} />
-      <Drawer.Screen name="RawMaterialRequests" options={{ title: "Raw Material Requests" }} />
-      <Drawer.Screen name="RiderRequests" options={{ title: "Rider Requests" }} />
-      <Drawer.Screen name="Specials" options={{ title: "Specials" }} />
-      <Drawer.Screen name="KitchenHelpers" options={{ title: "Kitchen Helpers" }} />
+      <Drawer.Screen 
+        name="CookOverview" 
+        options={{ 
+          title: "Cook Overview",
+          drawerIcon: ({ color, size }) => (
+            <Feather name="home" size={size} color={color} />
+          ),
+        }} 
+      />
+      <Drawer.Screen 
+        name="MyMenu" 
+        options={{ 
+          title: "My Menu",
+          drawerIcon: ({ color, size }) => (
+            <Feather name="book-open" size={size} color={color} />
+          ),
+        }} 
+      />
+      <Drawer.Screen 
+        name="FoodPrepStatus" 
+        options={{ 
+          title: "Food Prep Status",
+          drawerIcon: ({ color, size }) => (
+            <Feather name="clock" size={size} color={color} />
+          ),
+        }} 
+      />
+      <Drawer.Screen 
+        name="RawMaterialRequests" 
+        options={{ 
+          title: "Raw Material Requests",
+          drawerIcon: ({ color, size }) => (
+            <Feather name="shopping-cart" size={size} color={color} />
+          ),
+        }} 
+      />
+      <Drawer.Screen 
+        name="RiderRequests" 
+        options={{ 
+          title: "Rider Requests",
+          drawerIcon: ({ color, size }) => (
+            <Feather name="truck" size={size} color={color} />
+          ),
+        }} 
+      />
+      <Drawer.Screen 
+        name="Specials" 
+        options={{ 
+          title: "Specials",
+          drawerIcon: ({ color, size }) => (
+            <Feather name="star" size={size} color={color} />
+          ),
+        }} 
+      />
+      <Drawer.Screen 
+        name="KitchenHelpers" 
+        options={{ 
+          title: "Kitchen Helpers",
+          drawerIcon: ({ color, size }) => (
+            <Feather name="users" size={size} color={color} />
+          ),
+        }} 
+      />
 
       {/* Custom Signout Button */}
       <Drawer.Screen

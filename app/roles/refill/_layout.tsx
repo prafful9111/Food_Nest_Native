@@ -19,10 +19,42 @@ export default function RefillCoordinatorLayout() {
       }}
     >
       {/* Map file routes to drawer items with nice titles */}
-      <Drawer.Screen name="RefillCoordinatorOverview" options={{ title: "Refill Coordinator Overview" }} />
-      <Drawer.Screen name="RefillRequests" options={{ title: "Refill Requests" }} />
-      <Drawer.Screen name="InventoryStatus" options={{ title: "Inventory Status" }} />
-      <Drawer.Screen name="CookCoordination" options={{ title: "Cook Coordination" }} />
+      <Drawer.Screen 
+        name="RefillCoordinatorOverview" 
+        options={{ 
+          title: "Refill Coordinator Overview",
+          drawerIcon: ({ color, size }) => (
+            <Feather name="home" size={size} color={color} />
+          ),
+        }} 
+      />
+      <Drawer.Screen 
+        name="RefillRequests" 
+        options={{ 
+          title: "Refill Requests",
+          drawerIcon: ({ color, size }) => (
+            <Feather name="refresh-cw" size={size} color={color} />
+          ),
+        }} 
+      />
+      <Drawer.Screen 
+        name="InventoryStatus" 
+        options={{ 
+          title: "Inventory Status",
+          drawerIcon: ({ color, size }) => (
+            <Feather name="bar-chart-2" size={size} color={color} />
+          ),
+        }} 
+      />
+      <Drawer.Screen 
+        name="CookCoordination" 
+        options={{ 
+          title: "Cook Coordination",
+          drawerIcon: ({ color, size }) => (
+            <Feather name="users" size={size} color={color} />
+          ),
+        }} 
+      />
 
       {/* Custom Signout Button */}
       <Drawer.Screen
