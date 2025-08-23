@@ -84,7 +84,7 @@ export default function RegisterScreen() {
         ]}
       >
         <Text style={styles.mainTitle}>Food-Nest</Text>
-        <Text style={styles.slogan}>Where Every Bite Tells a Story</Text>
+        <Text style={styles.slogan}>Your Street, Your Feast.</Text>
       </Animated.View>
 
       {/* Form Section */}
