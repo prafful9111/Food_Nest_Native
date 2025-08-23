@@ -4,7 +4,11 @@ import { Ionicons } from "@expo/vector-icons";
 
 export default function AuthLayout() {
   return (
-    <Tabs screenOptions={{ headerShown: true, headerTitle: "Welcome" }}>
+    <Tabs 
+      screenOptions={{ 
+        headerShown: false,
+      }}
+    >
       <Tabs.Screen
         name="login"
         options={{
