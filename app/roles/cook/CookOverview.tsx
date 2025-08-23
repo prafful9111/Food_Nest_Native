@@ -3,8 +3,6 @@
 import React from "react";
 import { View, Text, ScrollView, StyleSheet, Pressable, Alert } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
-import { signOut } from "@/lib/authStore";
-import { useRouter } from "expo-router";
 
 /* ---- Lightweight Card primitives (same pattern as your analytics.tsx) ---- */
 function Card({ children, style }: { children: React.ReactNode; style?: any }) {
@@ -27,12 +25,6 @@ function CardHeader({
 
 /* ---- Screen ---- */
 export default function CookOverviewScreen() {
-  const router = useRouter();
-
-  const handleSignOut = () => {
-    signOut();
-    router.replace("/(auth)/login");
-  };
 
   const stats: Array<{
     title: string;
@@ -51,10 +43,6 @@ export default function CookOverviewScreen() {
       <View style={styles.headerRow}>
         <Text style={styles.h1}>Cook Dashboard</Text>
         <Text style={styles.subtle}>Manage your kitchen operations</Text>
-        <Pressable onPress={handleSignOut} style={styles.signoutBtn}>
-          <Feather name="log-out" size={16} color="#fff" />
-          <Text style={styles.signoutText}>Sign out</Text>
-        </Pressable>
       </View>
 
       
@@ -95,16 +83,7 @@ const styles = StyleSheet.create({
   h1: { fontSize: 22, fontWeight: "800", color: "#111827" },
   subtle: { color: "#6b7280" },
 
-  signoutBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "#ef4444",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  signoutText: { color: "#fff", fontWeight: "700" },
+
 
   /* card base */
   card: {

@@ -1,9 +1,9 @@
 import { Drawer } from "expo-router/drawer";
 import { useRouter } from "expo-router";
-import { getUser, onAuthChange } from "@/lib/authStore";
-
+import { getUser, onAuthChange, signOut } from "@/lib/authStore";
 import { useEffect } from "react";
-
+import { Pressable, Text, View, StyleSheet } from "react-native";
+import { Feather } from "@expo/vector-icons";
 
 export default function CookLayout() {
 
@@ -18,9 +18,13 @@ useEffect(() => {
   const un = onAuthChange(check); check(); return un;
 }, [router]);
 
+const handleSignOut = () => {
+  signOut();
+  router.replace("/(auth)/login");
+};
+
   return (
     <Drawer
-    
       screenOptions={{
         headerTitle: "Cook",
       }}
@@ -34,7 +38,22 @@ useEffect(() => {
       <Drawer.Screen name="Specials" options={{ title: "Specials" }} />
       <Drawer.Screen name="KitchenHelpers" options={{ title: "Kitchen Helpers" }} />
 
-
+      {/* Custom Signout Button */}
+      <Drawer.Screen
+        name="signout"
+        options={{
+          title: "Sign Out",
+          drawerItemStyle: { marginTop: 'auto' },
+          drawerIcon: ({ color, size }) => (
+            <Feather name="log-out" size={size} color={color} />
+          ),
+        }}
+        listeners={{
+          focus: () => {
+            // This will be handled by the custom component
+          },
+        }}
+      />
     </Drawer>
   );
 }

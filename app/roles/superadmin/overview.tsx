@@ -1,8 +1,6 @@
 import React from "react";
 import { View, Text, ScrollView, StyleSheet, Pressable } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { signOut } from "@/lib/authStore";
 
 type Analytic = {
   title: string;
@@ -25,26 +23,15 @@ const toINR = (thbWithSymbol: string) => {
 };
 
 export default function SuperAdminOverview() {
-  const router = useRouter();
-
-  const handleSignOut = () => {
-    signOut();
-    router.replace("/(auth)/login"); // go straight to Login
-  };
 
   return (
     <ScrollView contentContainerStyle={styles.page}>
-      {/* Header with Sign out */}
+      {/* Header */}
       <View style={styles.headerRow}>
         <View>
           <Text style={styles.h1}>Dashboard Overview</Text>
           <Text style={styles.subtle}>Monitor your food cart operations</Text>
         </View>
-
-        <Pressable onPress={handleSignOut} style={styles.signoutBtn}>
-          <Feather name="log-out" size={16} color="#fff" />
-          <Text style={styles.signoutText}>Sign out</Text>
-        </Pressable>
       </View>
 
       {/* Analytics grid */}
@@ -181,16 +168,7 @@ const styles = StyleSheet.create({
 
   row: { flexDirection: "row" },
 
-  signoutBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "#ef4444",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  signoutText: { color: "#fff", fontWeight: "700" },
+
 
   card: {
     flex: 1,

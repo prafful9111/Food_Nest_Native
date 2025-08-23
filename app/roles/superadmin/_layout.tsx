@@ -1,9 +1,18 @@
 import { Drawer } from "expo-router/drawer";
+import { useRouter } from "expo-router";
+import { signOut } from "@/lib/authStore";
+import { Feather } from "@expo/vector-icons";
 
 export default function SuperAdminLayout() {
+  const router = useRouter();
+
+  const handleSignOut = () => {
+    signOut();
+    router.replace("/(auth)/login");
+  };
+
   return (
     <Drawer
-    
       screenOptions={{
         headerTitle: "SuperAdmin",
       }}
@@ -19,8 +28,22 @@ export default function SuperAdminLayout() {
       <Drawer.Screen name="vehicles-management" options={{ title: "Vehicles Management" }} />
       <Drawer.Screen name="analytics" options={{ title: "Analytics" }} />
 
-
-
+      {/* Custom Signout Button */}
+      <Drawer.Screen
+        name="signout"
+        options={{
+          title: "Sign Out",
+          drawerItemStyle: { marginTop: 'auto' },
+          drawerIcon: ({ color, size }) => (
+            <Feather name="log-out" size={size} color={color} />
+          ),
+        }}
+        listeners={{
+          focus: () => {
+            // This will be handled by the custom component
+          },
+        }}
+      />
 
     </Drawer>
   );

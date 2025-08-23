@@ -1,9 +1,7 @@
 // screens/SupervisorOverview.tsx
 import React from "react";
 import { ScrollView, View, Text, StyleSheet, Pressable, Alert } from "react-native";
-import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";          // ✅ expo-router
-import { signOut } from "@/lib/authStore";   
+import { Feather } from "@expo/vector-icons";   
 
 type Stat = {
   title: string;
@@ -47,13 +45,6 @@ const recentAlerts: AlertItem[] = [
 ];
 
 export default function SupervisorOverview() {
-
-    const router = useRouter();
-
-  const handleSignOut = () => {
-    signOut();                        // clear session/token
-    router.replace("/(auth)/login");  // go to Login screen
-  };
   return (
     <ScrollView contentContainerStyle={styles.page}>
       {/* Header */}
@@ -61,11 +52,6 @@ export default function SupervisorOverview() {
         <Text style={styles.h1}>Supervisor Dashboard</Text>
         <Text style={styles.subtle}>Monitor operations and manage your team</Text>
       </View>
-
-        <Pressable onPress={handleSignOut} style={styles.signoutBtn}>
-          <Feather name="log-out" size={16} color="#fff" />
-          <Text style={styles.signoutText}>Sign out</Text>
-        </Pressable>
 
 
       {/* SOS Button */}
@@ -283,14 +269,5 @@ const styles = StyleSheet.create({
   },
   sosText: { color: "#fff", fontWeight: "800", letterSpacing: 0.3 },
 
-    signoutBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "#ef4444",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  signoutText: { color: "#fff", fontWeight: "700" },
+
 });
