@@ -186,12 +186,28 @@ export default function UserManagement() {
 
   const approve = async (id: string) => {
     try {
-      const res = await api.post<{ ok: true; user: { id: string; email: string; name: string; role: ApiRole } }>(
-        `/api/admin/requests/${id}/approve`
-      );
+      const res = await api.post<{
+        ok: true;
+        emailSent?: boolean; // <-- added
+        user: { id: string; email: string; name: string; role: ApiRole };
+      }>(`/api/admin/requests/${id}/approve`);
+  
+      // remove from "pending requests" and refresh users list
       setRequests(arr => arr.filter(r => r._id !== id));
       await loadUsers();
-      Alert.alert("Approved", `${res.user.name} added as ${toUiRole(res.user.role)}.`);
+  
+      // show status based on backend mail result
+      if (res.emailSent) {
+        Alert.alert(
+          "Approved",
+          `${res.user.name} added as ${toUiRole(res.user.role)}.\n\nEmail notification sent to ${res.user.email}.`
+        );
+      } else {
+        Alert.alert(
+          "Approved",
+          `${res.user.name} added as ${toUiRole(res.user.role)}.\n\n(Email not sent — check SMTP config on the server.)`
+        );
+      }
     } catch (e: any) {
       Alert.alert("Approve failed", e.message || "Unknown error");
     }
@@ -199,12 +215,18 @@ export default function UserManagement() {
 
   const decline = async (id: string) => {
     try {
-      await api.post(`/api/admin/requests/${id}/decline`);
-      setRequests(arr => arr.filter(r => r._id !== id));
+      const r = await api.post<{ ok: boolean; emailSent?: boolean }>(`/api/admin/requests/${id}/decline`);
+      setRequests(arr => arr.filter(x => x._id !== id));
+      Alert.alert(
+        "Declined",
+        r.emailSent ? "Request declined. Email sent to the user." : "Request declined. (Email not sent.)"
+      );
     } catch (e: any) {
       Alert.alert("Decline failed", e.message || "Unknown error");
     }
   };
+  
+  
 
   const patchUserApi = async (
     id: string,
