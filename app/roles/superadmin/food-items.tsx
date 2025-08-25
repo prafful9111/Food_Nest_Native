@@ -1,33 +1,50 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  View, Text, ScrollView, Pressable, Modal,
-  TextInput, Image, Switch as RNSwitch, Alert, StyleSheet
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  Modal,
+  TextInput,
+  Image,
+  Switch as RNSwitch,
+  Alert,
+  StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 
-// ---- Images (use yours) ----
-const Chai     = require("../../../assets/chai.png");
-const VadaPav  = require("../../../assets/vadapav.png");
-const Poha     = require("../../../assets/poha.png");
-const Water    = require("../../../assets/water.png");
+// ---- Local fallback images (kept for placeholders) ----
+const Chai = require("../../../assets/chai.png");
+const VadaPav = require("../../../assets/vadapav.png");
+const Poha = require("../../../assets/poha.png");
+const Water = require("../../../assets/water.png");
 
-// ---- Types & seed (mirrors your web) ----
+// ====== API CONFIG (adjust to your env) ======
+// TIP: if you already keep API_BASE_URL in a central file, import it here instead.
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://192.168.29.87:1900"; // e.g., http://192.168.1.5:1900 on device
+
+// ---- Types (aligns with backend schema below) ----
 type Item = {
-  id: string; name: string; price: number; category: string;
-  available: boolean; image: any; tax?: number;
+  _id: string;
+  name: string;
+  price: number;
+  category: string;
+  available: boolean;
+  tax?: number;
+  imageUrl?: string | null; // served from backend
+  // UI-only fallback for old seeds
+  image?: any;
 };
-const initial: Item[] = [
-  { id: "1", name: "Poha",        price: 20,   category: "Snacks",    available: true,  image: Poha },
-  { id: "2", name: "Vada Pav",    price: 30,   category: "Snacks",    available: true,  image: VadaPav },
-  { id: "3", name: "Tea",         price: 7.99, category: "Beverages", available: false, image: Chai },
-  { id: "4", name: "Water Bottle",price: 6.99, category: "Beverages", available: true,  image: Water },
-];
 
 const toINR = (thb: number) => Math.round(thb * 2.5);
 
 export default function FoodItems() {
-  const [items, setItems] = useState<Item[]>(initial);
+  const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState<Item | null>(null);
 
   // form state
@@ -36,38 +53,146 @@ export default function FoodItems() {
   const [category, setCategory] = useState("");
   const [tax, setTax] = useState<string>("");
   const [available, setAvailable] = useState(true);
+  const [picked, setPicked] = useState<{ uri: string; type?: string; name?: string } | null>(null);
 
-  const resetForm = () => { setEditing(null); setName(""); setPrice(""); setCategory(""); setTax(""); setAvailable(true); };
+  const resetForm = () => {
+    setEditing(null);
+    setName("");
+    setPrice("");
+    setCategory("");
+    setTax("");
+    setAvailable(true);
+    setPicked(null);
+  };
 
-  const openAdd = () => { resetForm(); setIsAdding(true); };
-  const openEdit = (it: Item) => {
-    setEditing(it);
-    setName(it.name); setPrice(String(it.price)); setCategory(it.category);
-    setTax(it.tax ? String(it.tax) : ""); setAvailable(it.available);
+  const openAdd = () => {
+    resetForm();
     setIsAdding(true);
   };
 
-  const save = () => {
+  const openEdit = (it: Item) => {
+    setEditing(it);
+    setName(it.name);
+    setPrice(String(it.price));
+    setCategory(it.category);
+    setTax(it.tax ? String(it.tax) : "");
+    setAvailable(it.available);
+    setPicked(null); // don't prefill image picker
+    setIsAdding(true);
+  };
+
+  // ===== Pick image (Expo) =====
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission needed", "We need media permission to choose a photo.");
+      return;
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
+    if (!res.canceled && res.assets?.length) {
+      const a = res.assets[0];
+      setPicked({ uri: a.uri, type: a.mimeType || "image/jpeg", name: a.fileName || "food.jpg" });
+    }
+  };
+
+  // ===== API helpers =====
+  async function apiGet<T>(path: string): Promise<T> {
+    const r = await fetch(`${API_URL}${path}`);
+    if (!r.ok) throw new Error(await r.text());
+    return (await r.json()) as T;
+  }
+  async function apiSend<T>(path: string, method: string, body: any, isForm = false): Promise<T> {
+    const r = await fetch(`${API_URL}${path}`, {
+      method,
+      headers: isForm ? undefined : { "Content-Type": "application/json" },
+      body: isForm ? body : JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    return (await r.json()) as T;
+  }
+
+  // ===== Load items from backend =====
+  const load = async () => {
+    setLoading(true);
+    try {
+      const data = await apiGet<Item[]>("/api/foods");
+      setItems(data);
+    } catch (e: any) {
+      console.warn("/api/foods failed:", e?.message || e);
+      // Fallback: local seeds so screen isn't empty
+      setItems([
+        { _id: "1", name: "Poha", price: 20, category: "Snacks", available: true, image: Poha },
+        { _id: "2", name: "Vada Pav", price: 30, category: "Snacks", available: true, image: VadaPav },
+        { _id: "3", name: "Tea", price: 7.99, category: "Beverages", available: false, image: Chai },
+        { _id: "4", name: "Water Bottle", price: 6.99, category: "Beverages", available: true, image: Water },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  // ===== Create / Update =====
+  const save = async () => {
     const p = Number(price);
     const t = tax ? Number(tax) : undefined;
     if (!name.trim() || !category.trim() || Number.isNaN(p)) {
       Alert.alert("Please fill valid Name, Category and Price.");
       return;
     }
-    if (editing) {
-      setItems(arr => arr.map(x => x.id === editing.id ? { ...editing, name, price: p, category, tax: t, available } : x));
-    } else {
-      const img =
-        /tea|chai/i.test(name) ? Chai :
-        /water/i.test(name) ? Water :
-        /vada/i.test(name) ? VadaPav : Poha;
-      setItems(arr => [...arr, { id: String(Date.now()), name, price: p, category, tax: t, available, image: img }]);
+
+    setSaving(true);
+    try {
+      if (editing) {
+        // PATCH JSON (image optional via multipart)
+        let updated: Item;
+        if (picked) {
+          const fd = new FormData();
+          fd.append("name", name);
+          fd.append("price", String(p));
+          fd.append("category", category);
+          if (t !== undefined) fd.append("tax", String(t));
+          fd.append("available", String(available));
+          fd.append("image", { uri: picked.uri, name: picked.name || "food.jpg", type: picked.type || "image/jpeg" } as any);
+          updated = await apiSend<Item>(`/api/foods/${editing._id}`, "PATCH", fd, true);
+        } else {
+          updated = await apiSend<Item>(`/api/foods/${editing._id}`, "PATCH", { name, price: p, category, tax: t, available });
+        }
+        setItems((arr) => arr.map((x) => (x._id === editing._id ? updated : x)));
+      } else {
+        const fd = new FormData();
+        fd.append("name", name);
+        fd.append("price", String(p));
+        fd.append("category", category);
+        if (t !== undefined) fd.append("tax", String(t));
+        fd.append("available", String(available));
+        if (picked) {
+          fd.append("image", { uri: picked.uri, name: picked.name || "food.jpg", type: picked.type || "image/jpeg" } as any);
+        }
+        const created = await apiSend<Item>("/api/foods", "POST", fd, true);
+        setItems((arr) => [created, ...arr]);
+      }
+      setIsAdding(false);
+      resetForm();
+    } catch (e: any) {
+      Alert.alert("Save failed", e?.message || "Unable to save item");
+    } finally {
+      setSaving(false);
     }
-    setIsAdding(false);
-    resetForm();
   };
 
-  const remove = (id: string) => setItems(arr => arr.filter(x => x.id !== id));
+  // ===== Delete =====
+  const remove = async (_id: string) => {
+    try {
+      await apiSend(`/api/foods/${_id}`, "DELETE", {});
+      setItems((arr) => arr.filter((x) => x._id !== _id));
+    } catch (e: any) {
+      Alert.alert("Delete failed", e?.message || "Unable to delete");
+    }
+  };
 
   // 2-column card layout
   const rows = useMemo(() => {
@@ -90,52 +215,64 @@ export default function FoodItems() {
         </Pressable>
       </View>
 
-      {/* Grid */}
-      <View style={{ gap: 16 }}>
-        {rows.map((row, i) => (
-          <View key={i} style={styles.row}>
-            {row.map(item => (
-              <View key={item.id} style={styles.card}>
-                {/* Image */}
-                <View style={styles.imageBox}>
-                  <Image source={item.image} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
-                </View>
-
-                {/* Title + badge */}
-                <View style={styles.cardHeader}>
-                  <View>
-                    <Text style={styles.cardTitle}>{item.name}</Text>
-                    <Text style={styles.cardDesc}>{item.category}</Text>
+      {/* Loader */}
+      {loading ? (
+        <View style={{ paddingVertical: 40 }}>
+          <ActivityIndicator size="large" />
+        </View>
+      ) : (
+        <View style={{ gap: 16 }}>
+          {rows.map((row, i) => (
+            <View key={i} style={styles.row}>
+              {row.map((item) => (
+                <View key={item._id} style={styles.card}>
+                  {/* Image */}
+                  <View style={styles.imageBox}>
+                    {item.imageUrl ? (
+                      <Image source={{ uri: item.imageUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+                    ) : item.image ? (
+                      <Image source={item.image} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+                    ) : (
+                      <Image source={Poha} style={{ width: "100%", height: "100%" }} resizeMode="cover" />
+                    )}
                   </View>
-                  <View style={[styles.badge, item.available ? styles.badgeOn : styles.badgeOff]}>
-                    <Text style={[styles.badgeText, item.available ? styles.badgeTextOn : styles.badgeTextOff]}>
-                      {item.available ? "Available" : "Unavailable"}
+
+                  {/* Title + badge */}
+                  <View style={styles.cardHeader}>
+                    <View>
+                      <Text style={styles.cardTitle}>{item.name}</Text>
+                      <Text style={styles.cardDesc}>{item.category}</Text>
+                    </View>
+                    <View style={[styles.badge, item.available ? styles.badgeOn : styles.badgeOff]}>
+                      <Text style={[styles.badgeText, item.available ? styles.badgeTextOn : styles.badgeTextOff]}>
+                        {item.available ? "Available" : "Unavailable"}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Price + actions */}
+                  <View style={styles.cardFooter}>
+                    <Text style={styles.price}>
+                      ฿{item.price}
+                      <Text style={styles.inr}>  INR {toINR(item.price)}</Text>
                     </Text>
+
+                    <View style={styles.actions}>
+                      <Pressable style={styles.iconBtn} onPress={() => openEdit(item)}>
+                        <Feather name="edit-2" size={18} />
+                      </Pressable>
+                      <Pressable style={styles.iconBtn} onPress={() => remove(item._id)}>
+                        <Feather name="trash-2" size={18} />
+                      </Pressable>
+                    </View>
                   </View>
                 </View>
-
-                {/* Price + actions */}
-                <View style={styles.cardFooter}>
-                  <Text style={styles.price}>
-                    ฿{item.price}
-                    <Text style={styles.inr}>  INR {toINR(item.price)}</Text>
-                  </Text>
-
-                  <View style={styles.actions}>
-                    <Pressable style={styles.iconBtn} onPress={() => openEdit(item)}>
-                      <Feather name="edit-2" size={18} />
-                    </Pressable>
-                    <Pressable style={styles.iconBtn} onPress={() => remove(item.id)}>
-                      <Feather name="trash-2" size={18} />
-                    </Pressable>
-                  </View>
-                </View>
-              </View>
-            ))}
-            {row.length === 1 && <View style={{ flex: 1 }} />}
-          </View>
-        ))}
-      </View>
+              ))}
+              {row.length === 1 && <View style={{ flex: 1 }} />}
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* Add/Edit modal */}
       <Modal transparent visible={isAdding} animationType="slide" onRequestClose={() => setIsAdding(false)}>
@@ -173,22 +310,28 @@ export default function FoodItems() {
               </View>
             </View>
 
-            {/* Upload area (visual only for now) */}
+            {/* Upload area */}
             <View style={{ gap: 6 }}>
               <Text style={styles.label}>Food Image</Text>
-              <View style={styles.uploadBox}>
-                <Feather name="upload" size={28} color="#6b7280" />
-                <Text style={{ color: "#6b7280", marginTop: 6 }}>Tap to upload or drag and drop</Text>
-                <Text style={{ color: "#9ca3af", fontSize: 12 }}>PNG, JPG up to 10MB</Text>
-              </View>
+              <Pressable style={styles.uploadBox} onPress={pickImage}>
+                {picked ? (
+                  <Image source={{ uri: picked.uri }} style={{ width: "100%", height: 160, borderRadius: 10 }} />
+                ) : (
+                  <>
+                    <Feather name="upload" size={28} color="#6b7280" />
+                    <Text style={{ color: "#6b7280", marginTop: 6 }}>Tap to upload or pick from gallery</Text>
+                    <Text style={{ color: "#9ca3af", fontSize: 12 }}>PNG, JPG up to 10MB</Text>
+                  </>
+                )}
+              </Pressable>
             </View>
 
             <View style={styles.modalActions}>
-              <Pressable onPress={() => { setIsAdding(false); resetForm(); }} style={styles.btnOutline}>
+              <Pressable onPress={() => { setIsAdding(false); resetForm(); }} style={styles.btnOutline} disabled={saving}>
                 <Text>Cancel</Text>
               </Pressable>
-              <Pressable onPress={save} style={styles.btnSolid}>
-                <Text style={{ color: "white", fontWeight: "600" }}>Save Item</Text>
+              <Pressable onPress={save} style={styles.btnSolid} disabled={saving}>
+                {saving ? <ActivityIndicator /> : <Text style={{ color: "white", fontWeight: "600" }}>Save Item</Text>}
               </Pressable>
             </View>
           </View>
@@ -217,10 +360,10 @@ const styles = StyleSheet.create({
 
   badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, borderWidth: 1 },
   badgeOn: { backgroundColor: "#10b98122", borderColor: "#10b98155" },
-  badgeOff:{ backgroundColor: "#e5e7eb",   borderColor: "#d1d5db" },
+  badgeOff: { backgroundColor: "#e5e7eb", borderColor: "#d1d5db" },
   badgeText: { fontSize: 12, fontWeight: "600" },
   badgeTextOn: { color: "#065f46" },
-  badgeTextOff:{ color: "#374151" },
+  badgeTextOff: { color: "#374151" },
 
   cardFooter: { marginTop: 6, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   price: { fontSize: 20, fontWeight: "700", color: "#111827" },
@@ -238,7 +381,7 @@ const styles = StyleSheet.create({
   label: { fontWeight: "600", color: "#374151" },
   input: { borderWidth: 1, borderColor: "#d1d5db", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
 
-  uploadBox: { borderWidth: 2, borderStyle: "dashed", borderColor: "#d1d5db", borderRadius: 12, padding: 20, alignItems: "center" },
+  uploadBox: { borderWidth: 2, borderStyle: "dashed", borderColor: "#d1d5db", borderRadius: 12, padding: 20, alignItems: "center", justifyContent: "center", minHeight: 80 },
 
   modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 12, marginTop: 6 },
   btnOutline: { paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderRadius: 10, borderColor: "#d1d5db" },
