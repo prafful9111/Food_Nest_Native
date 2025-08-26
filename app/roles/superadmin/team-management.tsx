@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,32 +9,32 @@ import {
   Modal,
   Alert,
   ActivityIndicator,
-} from "react-native";
-import { Feather } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { api } from "@/lib/api";
+} from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { api } from '@/lib/api';
 
 /* ===== Seed data (kept, unchanged) ===== */
 type Person = { id: number; name: string; available: boolean };
 
 const supervisors: Person[] = [
-  { id: 1, name: "Alice Johnson", available: true },
-  { id: 2, name: "Bob Smith", available: false },
-  { id: 3, name: "Carol Davis", available: true },
-  { id: 4, name: "David Wilson", available: true },
+  { id: 1, name: 'Alice Johnson', available: true },
+  { id: 2, name: 'Bob Smith', available: false },
+  { id: 3, name: 'Carol Davis', available: true },
+  { id: 4, name: 'David Wilson', available: true },
 ];
 
 const riders: Person[] = [
-  { id: 1, name: "Mike Rodriguez", available: true },
-  { id: 2, name: "Sarah Chen", available: true },
-  { id: 3, name: "James Wilson", available: false },
-  { id: 4, name: "Emily Davis", available: true },
+  { id: 1, name: 'Mike Rodriguez', available: true },
+  { id: 2, name: 'Sarah Chen', available: true },
+  { id: 3, name: 'James Wilson', available: false },
+  { id: 4, name: 'Emily Davis', available: true },
 ];
 
 const cooks: Person[] = [
-  { id: 1, name: "Roberto Singh", available: true },
-  { id: 2, name: "Maria Garcia", available: true },
-  { id: 3, name: "David Kim", available: false },
+  { id: 1, name: 'Roberto Singh', available: true },
+  { id: 2, name: 'Maria Garcia', available: true },
+  { id: 3, name: 'David Kim', available: false },
 ];
 
 type Team = {
@@ -50,20 +50,20 @@ type Team = {
 const initialTeams: Team[] = [
   {
     id: 1,
-    name: "Downtown Team",
-    supervisors: ["Alice Johnson", "David Wilson"],
-    riders: ["Mike Rodriguez", "Sarah Chen"],
-    cooks: ["Roberto Singh"],
-    created: "2024-01-15",
+    name: 'Downtown Team',
+    supervisors: ['Alice Johnson', 'David Wilson'],
+    riders: ['Mike Rodriguez', 'Sarah Chen'],
+    cooks: ['Roberto Singh'],
+    created: '2024-01-15',
     routes: 3,
   },
   {
     id: 2,
-    name: "Suburban Team",
-    supervisors: ["Carol Davis"],
-    riders: ["Emily Davis"],
-    cooks: ["Maria Garcia"],
-    created: "2024-01-20",
+    name: 'Suburban Team',
+    supervisors: ['Carol Davis'],
+    riders: ['Emily Davis'],
+    cooks: ['Maria Garcia'],
+    created: '2024-01-20',
     routes: 2,
   },
 ];
@@ -79,6 +79,7 @@ type ApiTeam = {
   supervisors: Member[];
   riders: Member[];
   cooks: Member[];
+  refills: Member[];
 };
 
 const idsToNames = (ids: string[], pool: Member[]) =>
@@ -98,29 +99,40 @@ export default function TeamManagement() {
   const [editingTeam, setEditingTeam] = useState<ApiTeam | null>(null);
 
   // form state (store IDs now)
-  const [teamName, setTeamName] = useState("");
+  const [teamName, setTeamName] = useState('');
   const [selSupIds, setSelSupIds] = useState<string[]>([]);
   const [selRidIds, setSelRidIds] = useState<string[]>([]);
   const [selCookIds, setSelCookIds] = useState<string[]>([]);
+  const [selRefillIds, setSelRefillIds] = useState<string[]>([]);
 
   // picker option pools loaded from backend
   const [supOptions, setSupOptions] = useState<Member[]>([]);
   const [riderOptions, setRiderOptions] = useState<Member[]>([]);
   const [cookOptions, setCookOptions] = useState<Member[]>([]);
+  const [refillOptions, setRefillOptions] = useState<Member[]>([]);
 
   const canSubmit =
     teamName.trim().length > 0 &&
-    (selSupIds.length + selRidIds.length + selCookIds.length) > 0;
+    selSupIds.length +
+      selRidIds.length +
+      selCookIds.length +
+      selRefillIds.length >
+      0;
 
   const resetForm = () => {
-    setTeamName("");
+    setTeamName('');
     setSelSupIds([]);
     setSelRidIds([]);
     setSelCookIds([]);
+    setSelRefillIds([]);
     setEditingTeam(null);
   };
 
-  const toggle = (list: string[], id: string, setter: (v: string[]) => void) => {
+  const toggle = (
+    list: string[],
+    id: string,
+    setter: (v: string[]) => void
+  ) => {
     setter(list.includes(id) ? list.filter((n) => n !== id) : [...list, id]);
   };
 
@@ -137,6 +149,7 @@ export default function TeamManagement() {
     setSelSupIds(team.supervisors.map((m) => m.id));
     setSelRidIds(team.riders.map((m) => m.id));
     setSelCookIds(team.cooks.map((m) => m.id));
+    setSelRefillIds((team.refills || []).map((m) => m.id));
     setOpen(true);
   };
 
@@ -151,22 +164,24 @@ export default function TeamManagement() {
           supervisors: selSupIds,
           riders: selRidIds,
           cooks: selCookIds,
+          refills: selRefillIds,
         });
-        Alert.alert("Success", "Team updated.");
+        Alert.alert('Success', 'Team updated.');
       } else {
         await api.post(`/api/admin/teams`, {
           name: teamName.trim(),
           supervisors: selSupIds,
           riders: selRidIds,
           cooks: selCookIds,
+          refills: selRefillIds,
         });
-        Alert.alert("Success", "Team created.");
+        Alert.alert('Success', 'Team created.');
       }
       await loadTeams();
       setOpen(false);
       resetForm();
     } catch (e: any) {
-      Alert.alert("Failed", e?.message || "Could not save team.");
+      Alert.alert('Failed', e?.message || 'Could not save team.');
     }
   };
 
@@ -174,77 +189,82 @@ export default function TeamManagement() {
   async function loadTeams() {
     try {
       setLoading(true);
-      const res = await api.get<{ items: ApiTeam[] }>("/api/admin/teams");
+      const res = await api.get<{ items: ApiTeam[] }>('/api/admin/teams');
       setTeams(res.items || []);
     } catch (e) {
-      console.error("loadTeams error", e);
-      Alert.alert("Error", "Could not load teams.");
+      console.error('loadTeams error', e);
+      Alert.alert('Error', 'Could not load teams.');
     } finally {
       setLoading(false);
     }
   }
 
-// Accepts a variety of backend shapes and normalizes to {id, name, email}
-function normalizeUsers(payload: any): { id: string; name: string; email?: string }[] {
-  const arr =
-    (payload && Array.isArray(payload.users) && payload.users) || // { users: [...] }
-    (Array.isArray(payload) && payload) ||                        // [...] directly
-    (payload && Array.isArray(payload.items) && payload.items) || // { items: [...] }
-    [];
+  // Accepts a variety of backend shapes and normalizes to {id, name, email}
+  function normalizeUsers(
+    payload: any
+  ): { id: string; name: string; email?: string }[] {
+    const arr =
+      (payload && Array.isArray(payload.users) && payload.users) || // { users: [...] }
+      (Array.isArray(payload) && payload) || // [...] directly
+      (payload && Array.isArray(payload.items) && payload.items) || // { items: [...] }
+      [];
 
-  return arr
-    .map((u: any) => ({
-      id: String(u.id ?? u._id ?? u.userId ?? u.uuid ?? ""),
-      // prefer real name; fall back to handle/email if needed
-      name: String(u.name ?? u.fullName ?? u.displayName ?? u.handle ?? u.email ?? "").trim(),
-      email: u.email || undefined,
-      role: u.role,
-    }))
-    .filter((u: any) => u.id && u.name);
-}
+    return arr
+      .map((u: any) => ({
+        id: String(u.id ?? u._id ?? u.userId ?? u.uuid ?? ''),
+        // prefer real name; fall back to handle/email if needed
+        name: String(
+          u.name ?? u.fullName ?? u.displayName ?? u.handle ?? u.email ?? ''
+        ).trim(),
+        email: u.email || undefined,
+        role: u.role,
+      }))
+      .filter((u: any) => u.id && u.name);
+  }
 
-
-async function loadOptions() {
-  try {
-    // Try role-filtered endpoints first
-    const [sup, rid, cook] = await Promise.all([
-      api.get<any>("/api/admin/users?role=supervisor"),
-      api.get<any>("/api/admin/users?role=rider"),
-      api.get<any>("/api/admin/users?role=cook"),
-    ]);
-
-    let _sup = normalizeUsers(sup);
-    let _rid = normalizeUsers(rid);
-    let _cook = normalizeUsers(cook);
-
-    // Fallback: if your backend didn't implement ?role= filter yet, fetch all and split by role
-    if (!_sup.length && !_rid.length && !_cook.length) {
-      const all = await api.get<any>("/api/admin/users");
-      const normalized = normalizeUsers(all);
-      _sup = normalized.filter((u: any) => u.role === "supervisor");
-      _rid = normalized.filter((u: any) => u.role === "rider");
-      _cook = normalized.filter((u: any) => u.role === "cook");
-    }
-
-    setSupOptions(_sup);
-    setRiderOptions(_rid);
-    setCookOptions(_cook);
-  } catch (e: any) {
-    console.error("loadOptions error", e);
-    // Extra fallback: attempt unfiltered then split by role if 403/500 happened for role queries
+  async function loadOptions() {
     try {
-      const all = await api.get<any>("/api/admin/users");
-      const normalized = normalizeUsers(all);
-      setSupOptions(normalized.filter((u: any) => u.role === "supervisor"));
-      setRiderOptions(normalized.filter((u: any) => u.role === "rider"));
-      setCookOptions(normalized.filter((u: any) => u.role === "cook"));
-    } catch (e2: any) {
-      console.error("loadOptions fallback error", e2);
-      Alert.alert("Error", "Could not load user lists.");
+      const [sup, rid, cook, refi] = await Promise.all([
+        api.get<any>('/api/admin/users?role=supervisor'),
+        api.get<any>('/api/admin/users?role=rider'),
+        api.get<any>('/api/admin/users?role=cook'),
+        api.get<any>('/api/admin/users?role=refill'),
+      ]);
+
+      let _sup = normalizeUsers(sup);
+      let _rid = normalizeUsers(rid);
+      let _cook = normalizeUsers(cook);
+      let _refi = normalizeUsers(refi);
+
+      // Fallback: if role filter not implemented, fetch all and split by role
+      if (!_sup.length && !_rid.length && !_cook.length && !_refi.length) {
+        const all = await api.get<any>('/api/admin/users');
+        const normalized = normalizeUsers(all);
+        _sup = normalized.filter((u: any) => u.role === 'supervisor');
+        _rid = normalized.filter((u: any) => u.role === 'rider');
+        _cook = normalized.filter((u: any) => u.role === 'cook');
+        _refi = normalized.filter((u: any) => u.role === 'refill');
+      }
+
+      setSupOptions(_sup);
+      setRiderOptions(_rid);
+      setCookOptions(_cook);
+      setRefillOptions(_refi);
+    } catch (e: any) {
+      console.error('loadOptions error', e);
+      try {
+        const all = await api.get<any>('/api/admin/users');
+        const normalized = normalizeUsers(all);
+        setSupOptions(normalized.filter((u: any) => u.role === 'supervisor'));
+        setRiderOptions(normalized.filter((u: any) => u.role === 'rider'));
+        setCookOptions(normalized.filter((u: any) => u.role === 'cook'));
+        setRefillOptions(normalized.filter((u: any) => u.role === 'refill'));
+      } catch (e2: any) {
+        console.error('loadOptions fallback error', e2);
+        Alert.alert('Error', 'Could not load user lists.');
+      }
     }
   }
-}
-
 
   /* ------------ initial load ------------ */
   useEffect(() => {
@@ -258,19 +278,28 @@ async function loadOptions() {
       <View style={styles.headerRow}>
         <View>
           <Text style={styles.h1}>Team Management</Text>
-          <Text style={styles.subtle}>Create and manage teams with supervisors</Text>
+          <Text style={styles.subtle}>
+            Create and manage teams with supervisors
+          </Text>
         </View>
 
         {/* Yellow gradient Create Team button */}
         <LinearGradient
-          colors={["#facc15", "#f59e0b"]}
+          colors={['#facc15', '#f59e0b']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.btnGradient}
         >
-          <Pressable style={styles.btnGradientInner} onPress={openCreate}>
-            <Feather name="plus" color="#ffffff" size={16} />
-            <Text style={styles.btnGradientText}>  Create Team</Text>
+          <Pressable
+            style={styles.btnGradientInner}
+            onPress={openCreate}
+          >
+            <Feather
+              name='plus'
+              color='#ffffff'
+              size={16}
+            />
+            <Text style={styles.btnGradientText}> Create Team</Text>
           </Pressable>
         </LinearGradient>
       </View>
@@ -278,47 +307,91 @@ async function loadOptions() {
       {/* Teams list */}
       <View style={{ gap: 12 }}>
         {loading ? (
-          <View style={[styles.card, { alignItems: "center", paddingVertical: 18 }]}>
+          <View
+            style={[styles.card, { alignItems: 'center', paddingVertical: 18 }]}
+          >
             <ActivityIndicator />
           </View>
         ) : teams.length === 0 ? (
           <View style={styles.card}>
-            <Text style={styles.subtle}>No teams yet. Create your first team.</Text>
+            <Text style={styles.subtle}>
+              No teams yet. Create your first team.
+            </Text>
           </View>
         ) : (
           teams.map((team) => (
-            <View key={team.id} style={styles.card}>
+            <View
+              key={team.id}
+              style={styles.card}
+            >
               <View style={[styles.rowBetween, { marginBottom: 6 }]}>
                 <View>
-                  <View style={[styles.row, { alignItems: "center", gap: 8 }]}>
-                    <Feather name="users" size={18} />
-                    <Text style={{ fontSize: 18, fontWeight: "800" }}>{team.name}</Text>
+                  <View style={[styles.row, { alignItems: 'center', gap: 8 }]}>
+                    <Feather
+                      name='users'
+                      size={18}
+                    />
+                    <Text style={{ fontSize: 18, fontWeight: '800' }}>
+                      {team.name}
+                    </Text>
                   </View>
                   <Text style={[styles.subtleSmall, { marginTop: 4 }]}>
-                    Created: {team.created}  ·  {team.routes} active routes
+                    Created: {team.created} · {team.routes} active routes
                   </Text>
                 </View>
 
                 {/* EDIT TEAM */}
-                <Pressable style={styles.btnOutline} onPress={() => openEdit(team)}>
+                <Pressable
+                  style={styles.btnOutline}
+                  onPress={() => openEdit(team)}
+                >
                   <Text>Edit Team</Text>
                 </Pressable>
               </View>
 
               <View style={{ gap: 12 }}>
                 {team.supervisors.length > 0 && (
-                  <Section title="Supervisors" icon="user">
-                    <ChipRow data={team.supervisors.map((m) => m.name)} color="#1d4ed8" />
+                  <Section
+                    title='Supervisors'
+                    icon='user'
+                  >
+                    <ChipRow
+                      data={team.supervisors.map((m) => m.name)}
+                      color='#1d4ed8'
+                    />
                   </Section>
                 )}
                 {team.riders.length > 0 && (
-                  <Section title="Riders" icon="truck">
-                    <ChipRow data={team.riders.map((m) => m.name)} color="#047857" />
+                  <Section
+                    title='Riders'
+                    icon='truck'
+                  >
+                    <ChipRow
+                      data={team.riders.map((m) => m.name)}
+                      color='#047857'
+                    />
                   </Section>
                 )}
                 {team.cooks.length > 0 && (
-                  <Section title="Cooks" icon="coffee">
-                    <ChipRow data={team.cooks.map((m) => m.name)} color="#c2410c" />
+                  <Section
+                    title='Cooks'
+                    icon='coffee'
+                  >
+                    <ChipRow
+                      data={team.cooks.map((m) => m.name)}
+                      color='#c2410c'
+                    />
+                  </Section>
+                )}
+                {team.refills && team.refills.length > 0 && (
+                  <Section
+                    title='Refill Coordinators'
+                    icon='refresh-ccw'
+                  >
+                    <ChipRow
+                      data={team.refills.map((m) => m.name)}
+                      color='#a21caf'
+                    />
                   </Section>
                 )}
               </View>
@@ -328,17 +401,27 @@ async function loadOptions() {
       </View>
 
       {/* Create/Edit Team Modal */}
-      <Modal transparent visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
+      <Modal
+        transparent
+        visible={open}
+        animationType='slide'
+        onRequestClose={() => setOpen(false)}
+      >
         <View style={styles.backdrop}>
-          <View style={[styles.card, { padding: 16, gap: 12, maxHeight: "90%", width: "100%" }]}>
+          <View
+            style={[
+              styles.card,
+              { padding: 16, gap: 12, maxHeight: '90%', width: '100%' },
+            ]}
+          >
             <View>
-              <Text style={{ fontSize: 18, fontWeight: "800" }}>
-                {editingTeam ? "Edit Team" : "Create New Team"}
+              <Text style={{ fontSize: 18, fontWeight: '800' }}>
+                {editingTeam ? 'Edit Team' : 'Create New Team'}
               </Text>
               <Text style={styles.subtle}>
                 {editingTeam
-                  ? "Update team name and membership"
-                  : "Create a team and assign supervisors to manage operations"}
+                  ? 'Update team name and membership'
+                  : 'Create a team and assign supervisors to manage operations'}
               </Text>
             </View>
 
@@ -348,7 +431,7 @@ async function loadOptions() {
                 <Text style={styles.label}>Team Name</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter team name"
+                  placeholder='Enter team name'
                   value={teamName}
                   onChangeText={setTeamName}
                 />
@@ -356,8 +439,8 @@ async function loadOptions() {
 
               {/* Supervisors */}
               <PickerGroup
-                icon="user"
-                title="Select Supervisors"
+                icon='user'
+                title='Select Supervisors'
                 people={supOptions}
                 selected={selSupIds}
                 onToggle={(id) => toggle(selSupIds, id, setSelSupIds)}
@@ -365,8 +448,8 @@ async function loadOptions() {
 
               {/* Riders */}
               <PickerGroup
-                icon="truck"
-                title="Select Riders"
+                icon='truck'
+                title='Select Riders'
                 people={riderOptions}
                 selected={selRidIds}
                 onToggle={(id) => toggle(selRidIds, id, setSelRidIds)}
@@ -374,34 +457,78 @@ async function loadOptions() {
 
               {/* Cooks */}
               <PickerGroup
-                icon="coffee"
-                title="Select Cooks"
+                icon='coffee'
+                title='Select Cooks'
                 people={cookOptions}
                 selected={selCookIds}
                 onToggle={(id) => toggle(selCookIds, id, setSelCookIds)}
               />
+              <PickerGroup
+                icon='refresh-ccw'
+                title='Select Refill Coordinators'
+                people={refillOptions}
+                selected={selRefillIds}
+                onToggle={(id) => toggle(selRefillIds, id, setSelRefillIds)}
+              />
 
               {/* Selected preview */}
               {selSupIds.length || selRidIds.length || selCookIds.length ? (
-                <View style={{ paddingTop: 10, borderTopWidth: 1, borderColor: "#e5e7eb", gap: 8 }}>
+                <View
+                  style={{
+                    paddingTop: 10,
+                    borderTopWidth: 1,
+                    borderColor: '#e5e7eb',
+                    gap: 8,
+                  }}
+                >
                   <Text style={styles.label}>Selected Team Members</Text>
 
                   {selSupIds.length > 0 && (
                     <View>
-                      <Badge text="Supervisors" outline />
-                      <ChipRow data={idsToNames(selSupIds, supOptions)} color="#1d4ed8" />
+                      <Badge
+                        text='Supervisors'
+                        outline
+                      />
+                      <ChipRow
+                        data={idsToNames(selSupIds, supOptions)}
+                        color='#1d4ed8'
+                      />
                     </View>
                   )}
                   {selRidIds.length > 0 && (
                     <View>
-                      <Badge text="Riders" outline />
-                      <ChipRow data={idsToNames(selRidIds, riderOptions)} color="#047857" />
+                      <Badge
+                        text='Riders'
+                        outline
+                      />
+                      <ChipRow
+                        data={idsToNames(selRidIds, riderOptions)}
+                        color='#047857'
+                      />
                     </View>
                   )}
                   {selCookIds.length > 0 && (
                     <View>
-                      <Badge text="Cooks" outline />
-                      <ChipRow data={idsToNames(selCookIds, cookOptions)} color="#c2410c" />
+                      <Badge
+                        text='Cooks'
+                        outline
+                      />
+                      <ChipRow
+                        data={idsToNames(selCookIds, cookOptions)}
+                        color='#c2410c'
+                      />
+                    </View>
+                  )}
+                  {selRefillIds.length > 0 && (
+                    <View>
+                      <Badge
+                        text='Refill Coordinators'
+                        outline
+                      />
+                      <ChipRow
+                        data={idsToNames(selRefillIds, refillOptions)}
+                        color='#a21caf'
+                      />
                     </View>
                   )}
                 </View>
@@ -411,7 +538,13 @@ async function loadOptions() {
               <View
                 style={[
                   styles.row,
-                  { justifyContent: "flex-end", gap: 8, paddingTop: 10, borderTopWidth: 1, borderColor: "#e5e7eb" },
+                  {
+                    justifyContent: 'flex-end',
+                    gap: 8,
+                    paddingTop: 10,
+                    borderTopWidth: 1,
+                    borderColor: '#e5e7eb',
+                  },
                 ]}
               >
                 <Pressable
@@ -429,8 +562,12 @@ async function loadOptions() {
                   onPress={submit}
                   style={[styles.btnSolid, !canSubmit && { opacity: 0.5 }]}
                 >
-                  <Feather name="check" color="#fff" size={16} />
-                  <Text style={styles.btnSolidText}>  Save</Text>
+                  <Feather
+                    name='check'
+                    color='#fff'
+                    size={16}
+                  />
+                  <Text style={styles.btnSolidText}> Save</Text>
                 </Pressable>
               </View>
             </ScrollView>
@@ -453,9 +590,14 @@ function Section({
 }) {
   return (
     <View>
-      <View style={[styles.row, { alignItems: "center", gap: 8, marginBottom: 6 }]}>
-        <Feather name={icon} size={16} />
-        <Text style={{ fontWeight: "700" }}>{title}</Text>
+      <View
+        style={[styles.row, { alignItems: 'center', gap: 8, marginBottom: 6 }]}
+      >
+        <Feather
+          name={icon}
+          size={16}
+        />
+        <Text style={{ fontWeight: '700' }}>{title}</Text>
       </View>
       {children}
     </View>
@@ -464,10 +606,10 @@ function Section({
 
 function ChipRow({ data, color }: { data: string[]; color: string }) {
   return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
       {data.map((d, idx) => (
         <View
-          key={d + "_" + idx}
+          key={d + '_' + idx}
           style={{
             paddingHorizontal: 10,
             paddingVertical: 6,
@@ -475,7 +617,7 @@ function ChipRow({ data, color }: { data: string[]; color: string }) {
             backgroundColor: color,
           }}
         >
-          <Text style={{ color: "#fff", fontWeight: "700" }}>{d}</Text>
+          <Text style={{ color: '#fff', fontWeight: '700' }}>{d}</Text>
         </View>
       ))}
     </View>
@@ -487,18 +629,18 @@ function Badge({ text, outline = false }: { text: string; outline?: boolean }) {
     <View
       style={[
         {
-          alignSelf: "flex-start",
+          alignSelf: 'flex-start',
           paddingHorizontal: 10,
           paddingVertical: 4,
           borderRadius: 999,
           marginBottom: 6,
         },
         outline
-          ? { borderWidth: 1, borderColor: "#e5e7eb", backgroundColor: "#fff" }
-          : { backgroundColor: "#e5e7eb" },
+          ? { borderWidth: 1, borderColor: '#e5e7eb', backgroundColor: '#fff' }
+          : { backgroundColor: '#e5e7eb' },
       ]}
     >
-      <Text style={{ fontWeight: "700", color: "#111827" }}>{text}</Text>
+      <Text style={{ fontWeight: '700', color: '#111827' }}>{text}</Text>
     </View>
   );
 }
@@ -519,30 +661,42 @@ function PickerGroup({
 }) {
   return (
     <View>
-      <View style={[styles.row, { alignItems: "center", gap: 8, marginBottom: 6 }]}>
-        <Feather name={icon} size={16} />
+      <View
+        style={[styles.row, { alignItems: 'center', gap: 8, marginBottom: 6 }]}
+      >
+        <Feather
+          name={icon}
+          size={16}
+        />
         <Text style={[styles.label, { marginBottom: 0 }]}>{title}</Text>
       </View>
 
       <View style={[styles.listWrap]}>
         {people.length === 0 ? (
-          <Text style={{ padding: 12, color: "#6b7280" }}>No options</Text>
+          <Text style={{ padding: 12, color: '#6b7280' }}>No options</Text>
         ) : (
           people.map((p, idx) => {
             const checked = selected.includes(p.id);
             return (
-              <View key={p.id + "_" + idx}>
+              <View key={p.id + '_' + idx}>
                 <Pressable
                   onPress={() => onToggle(p.id)}
-                  style={[styles.listRow, { justifyContent: "space-between" }]}
+                  style={[styles.listRow, { justifyContent: 'space-between' }]}
                 >
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Feather name={checked ? "check-square" : "square"} size={18} />
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Feather
+                      name={checked ? 'check-square' : 'square'}
+                      size={18}
+                    />
                     <Text style={{ marginLeft: 8 }}>{p.name}</Text>
                   </View>
-                  {p.email ? <Text style={styles.subtleSmall}>{p.email}</Text> : null}
+                  {p.email ? (
+                    <Text style={styles.subtleSmall}>{p.email}</Text>
+                  ) : null}
                 </Pressable>
-                {idx < people.length - 1 ? <View style={styles.divider} /> : null}
+                {idx < people.length - 1 ? (
+                  <View style={styles.divider} />
+                ) : null}
               </View>
             );
           })
@@ -554,29 +708,33 @@ function PickerGroup({
 
 /* ---------- styles (kept + a few additions) ---------- */
 const styles = StyleSheet.create({
-  page: { padding: 16, gap: 16, paddingBottom: 32, backgroundColor: "#f9fafb" },
+  page: { padding: 16, gap: 16, paddingBottom: 32, backgroundColor: '#f9fafb' },
 
   headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 
-  h1: { fontSize: 22, fontWeight: "800", color: "#111827" },
-  subtle: { color: "#6b7280" },
-  subtleSmall: { color: "#6b7280", fontSize: 12 },
+  h1: { fontSize: 22, fontWeight: '800', color: '#111827' },
+  subtle: { color: '#6b7280' },
+  subtleSmall: { color: '#6b7280', fontSize: 12 },
 
-  row: { flexDirection: "row" },
-  rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  row: { flexDirection: 'row' },
+  rowBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
 
   card: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 14,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#eceff3",
-    shadowColor: "#0f172a",
+    borderColor: '#eceff3',
+    shadowColor: '#0f172a',
     shadowOpacity: 0.06,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 10,
@@ -585,20 +743,20 @@ const styles = StyleSheet.create({
 
   /* old solid button (kept, still used for Save) */
   btnSolid: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#2563eb",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2563eb',
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  btnSolidText: { color: "#fff", fontWeight: "700" },
+  btnSolidText: { color: '#fff', fontWeight: '700' },
 
   /* outline button (kept) */
   btnOutline: {
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#fff",
+    borderColor: '#e5e7eb',
+    backgroundColor: '#fff',
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -609,41 +767,46 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   btnGradientInner: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 999,
   },
-  btnGradientText: { color: "#ffffff", fontWeight: "800" },
+  btnGradientText: { color: '#ffffff', fontWeight: '800' },
 
   /* form */
   field: { gap: 6 },
-  label: { fontWeight: "700", color: "#111827", marginBottom: 4 },
+  label: { fontWeight: '700', color: '#111827', marginBottom: 4 },
   input: {
     borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderColor: '#e5e7eb',
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
   },
 
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.25)",
+    backgroundColor: 'rgba(0,0,0,0.25)',
     padding: 16,
-    justifyContent: "flex-end",
+    justifyContent: 'flex-end',
   },
 
   /* list container reused in picker */
-  listWrap: { borderWidth: 1, borderColor: "#eef1f5", borderRadius: 12, overflow: "hidden" },
+  listWrap: {
+    borderWidth: 1,
+    borderColor: '#eef1f5',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
   listRow: {
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: "#fff",
-    flexDirection: "row",
-    alignItems: "center",
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  divider: { height: 1, backgroundColor: "#eef1f5" },
+  divider: { height: 1, backgroundColor: '#eef1f5' },
 });
