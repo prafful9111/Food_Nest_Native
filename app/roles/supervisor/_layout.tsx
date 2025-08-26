@@ -2,6 +2,28 @@ import { Drawer } from "expo-router/drawer";
 import { useRouter } from "expo-router";
 import { signOut } from "@/lib/authStore";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { StyleSheet } from "react-native";
+
+function GradientIcon({
+  name,
+  size = 24,
+}: {
+  name: React.ComponentProps<typeof Feather>["name"];
+  size?: number;
+}) {
+  const box = size + 12;
+  return (
+    <LinearGradient
+      colors={["#FFE082", "#FFC107", "#FFA000"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[styles.gradCircle, { width: box, height: box, borderRadius: box / 2 }]}
+    >
+      <Feather name={name} size={size} color="#fff" />
+    </LinearGradient>
+  );
+}
 
 export default function SupervisorLayout() {
   const router = useRouter();
@@ -13,65 +35,54 @@ export default function SupervisorLayout() {
 
   return (
     <Drawer
-    
       screenOptions={{
         headerTitle: "Supervisor",
+        drawerActiveTintColor: "#7A4F01",
+        drawerActiveBackgroundColor: "rgba(255,193,7,0.12)",
       }}
     >
       {/* Map file routes to drawer items with nice titles */}
-      <Drawer.Screen 
-        name="SupervisorOverview" 
-        options={{ 
+      <Drawer.Screen
+        name="SupervisorOverview"
+        options={{
           title: "Supervisor Overview",
-          drawerIcon: ({ color, size }) => (
-            <Feather name="home" size={size} color={color} />
-          ),
-        }} 
+          drawerIcon: ({ size }) => <GradientIcon name="home" size={size ?? 24} />,
+        }}
       />
-      <Drawer.Screen 
-        name="RiderLogs" 
-        options={{ 
+      <Drawer.Screen
+        name="RiderLogs"
+        options={{
           title: "Rider Logs",
-          drawerIcon: ({ color, size }) => (
-            <Feather name="file-text" size={size} color={color} />
-          ),
-        }} 
+          drawerIcon: ({ size }) => <GradientIcon name="file-text" size={size ?? 24} />,
+        }}
       />
-      <Drawer.Screen 
-        name="AssignRider" 
-        options={{ 
+      <Drawer.Screen
+        name="AssignRider"
+        options={{
           title: "Assign Rider",
-          drawerIcon: ({ color, size }) => (
-            <Feather name="user-plus" size={size} color={color} />
-          ),
-        }} 
+          drawerIcon: ({ size }) => <GradientIcon name="user-plus" size={size ?? 24} />,
+        }}
       />
-      <Drawer.Screen 
-        name="ViewInventory" 
-        options={{ 
+      <Drawer.Screen
+        name="ViewInventory"
+        options={{
           title: "View Inventory",
-          drawerIcon: ({ color, size }) => (
-            <Feather name="eye" size={size} color={color} />
-          ),
-        }} 
+          drawerIcon: ({ size }) => <GradientIcon name="eye" size={size ?? 24} />,
+        }}
       />
-      <Drawer.Screen 
-        name="ViewRoutes" 
-        options={{ 
+      <Drawer.Screen
+        name="ViewRoutes"
+        options={{
           title: "View Routes",
-          drawerIcon: ({ color, size }) => (
-            <Feather name="map" size={size} color={color} />
-          ),
-        }} 
+          drawerIcon: ({ size }) => <GradientIcon name="map" size={size ?? 24} />,
+        }}
       />
-      <Drawer.Screen 
-        name="RawMaterialInventory" 
-        options={{ 
+      <Drawer.Screen
+        name="RawMaterialInventory"
+        options={{
           title: "Raw Material Inventory",
-          drawerIcon: ({ color, size }) => (
-            <Feather name="package" size={size} color={color} />
-          ),
-        }} 
+          drawerIcon: ({ size }) => <GradientIcon name="package" size={size ?? 24} />,
+        }}
       />
 
       {/* Custom Signout Button */}
@@ -79,10 +90,8 @@ export default function SupervisorLayout() {
         name="signout"
         options={{
           title: "Sign Out",
-          drawerItemStyle: { marginTop: 'auto' },
-          drawerIcon: ({ color, size }) => (
-            <Feather name="log-out" size={size} color={color} />
-          ),
+          drawerItemStyle: { marginTop: "auto" },
+          drawerIcon: ({ size }) => <GradientIcon name="log-out" size={size ?? 24} />,
         }}
         listeners={{
           focus: () => {
@@ -90,7 +99,18 @@ export default function SupervisorLayout() {
           },
         }}
       />
-
     </Drawer>
   );
 }
+
+const styles = StyleSheet.create({
+  gradCircle: {
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#FFA000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+});
