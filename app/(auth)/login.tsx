@@ -1,41 +1,22 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { View, TextInput, Pressable, Text, Alert, ActivityIndicator, StyleSheet, Animated } from "react-native";
 import { useRouter } from "expo-router";
 import { signInWithToken } from "@/lib/authStore";
 import { api } from "@/lib/api";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  
-  // Animation refs
-  const titleAnim = useRef(new Animated.Value(0)).current;
-  const formAnim = useRef(new Animated.Value(0)).current;
-  const buttonAnim = useRef(new Animated.Value(0)).current;
+  const [showPassword, setShowPassword] = useState(false);
 
-  useEffect(() => {
-    // Animate elements in sequence
-    Animated.sequence([
-      Animated.timing(titleAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-      Animated.timing(formAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(buttonAnim, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
+  // Keep Animated refs but set to static (no animation)
+  const titleAnim = useRef(new Animated.Value(1)).current;
+  const formAnim = useRef(new Animated.Value(1)).current;
+  const buttonAnim = useRef(new Animated.Value(1)).current;
 
   const handleLogin = async () => {
     if (!email || !password) return Alert.alert("Missing info", "Enter email and password.");
@@ -56,43 +37,14 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Branding Section */}
-      <Animated.View 
-        style={[
-          styles.brandingContainer,
-          {
-            opacity: titleAnim,
-            transform: [{ 
-              translateY: titleAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [-50, 0]
-              })
-            }, { 
-              scale: titleAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0.8, 1]
-              })
-            }]
-          }
-        ]}
-      >
+      {/* Branding Section (no animation now) */}
+      <Animated.View style={[styles.brandingContainer, { opacity: 1 }]}>
         <Text style={styles.mainTitle}>Food-Nest</Text>
         <Text style={styles.slogan}>Your Street, Your Feast.</Text>
       </Animated.View>
 
-      {/* Form Section */}
-      <Animated.View 
-        style={[
-          styles.formContainer,
-          {
-            opacity: formAnim,
-            transform: [{ translateY: formAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [30, 0]
-            })}]
-          }
-        ]}
-      >
+      {/* Form Section (no animation now) */}
+      <Animated.View style={[styles.formContainer, { opacity: 1 }]}>
         <View style={styles.inputContainer}>
           <Feather name="mail" size={20} color="#666" style={styles.inputIcon} />
           <TextInput
@@ -110,34 +62,38 @@ export default function LoginScreen() {
           <Feather name="lock" size={20} color="#666" style={styles.inputIcon} />
           <TextInput
             placeholder="Password"
-            secureTextEntry
+            secureTextEntry={!showPassword}
             value={password}
             onChangeText={setPassword}
             editable={!busy}
             style={styles.textInput}
           />
+          <Pressable
+            onPress={() => setShowPassword((s) => !s)}
+            disabled={busy}
+            style={styles.eyeButton}
+            hitSlop={12}
+          >
+            <Feather name={showPassword ? "eye-off" : "eye"} size={20} color="#666" />
+          </Pressable>
         </View>
       </Animated.View>
 
-      <Animated.View
-        style={[
-          styles.buttonContainer,
-          {
-            opacity: buttonAnim,
-            transform: [{ scale: buttonAnim }]
-          }
-        ]}
-      >
-        <Pressable
-          onPress={handleLogin}
-          disabled={busy}
-          style={[styles.loginButton, busy && styles.loginButtonDisabled]}
-        >
-          {busy ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text style={styles.loginButtonText}>Login</Text>
-          )}
+      {/* Button Section (gradient yellows) */}
+      <Animated.View style={[styles.buttonContainer, { opacity: 1 }]}>
+        <Pressable onPress={handleLogin} disabled={busy} style={[styles.loginButtonContainer]}>
+          <LinearGradient
+            colors={busy ? ["#FFE082", "#FFCA28", "#FFB300"] : ["#FFE082", "#FFC107", "#FFA000"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.loginButtonGradient, busy && { opacity: 0.7 }]}
+          >
+            {busy ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.loginButtonText}>Login</Text>
+            )}
+          </LinearGradient>
         </Pressable>
       </Animated.View>
     </View>
@@ -148,7 +104,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#fffbe9', // subtle warm base for food vibe
   },
   brandingContainer: {
     alignItems: 'center',
@@ -159,7 +115,7 @@ const styles = StyleSheet.create({
   mainTitle: {
     fontSize: 36,
     fontWeight: '800',
-    color: '#204070',
+    color: '#7A4F01', // rich brown pairs well with yellows
     textAlign: 'center',
     marginBottom: 8,
     letterSpacing: 1,
@@ -167,7 +123,7 @@ const styles = StyleSheet.create({
   slogan: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#666',
+    color: '#8c6e54',
     textAlign: 'center',
     fontStyle: 'italic',
     letterSpacing: 0.5,
@@ -180,7 +136,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#e1e5e9',
+    borderColor: '#f1e2b6',
     borderRadius: 16,
     backgroundColor: 'white',
     paddingHorizontal: 16,
@@ -195,28 +151,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
+  eyeButton: {
+    paddingLeft: 8,
+    paddingVertical: 8,
+  },
   buttonContainer: {
     alignItems: 'center',
   },
-  loginButton: {
-    backgroundColor: '#204070',
-    paddingVertical: 18,
+  loginButtonContainer: {
     borderRadius: 16,
-    alignItems: "center",
-    shadowColor: '#204070',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowColor: '#FFA000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 5,
     minWidth: 200,
+    overflow: "hidden",
   },
-  loginButtonDisabled: {
-    backgroundColor: '#8aa0c0',
+  loginButtonGradient: {
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    alignItems: "center",
+    justifyContent: "center",
   },
   loginButtonText: {
     color: "white",
     fontWeight: "700",
     fontSize: 16,
     letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
 });
