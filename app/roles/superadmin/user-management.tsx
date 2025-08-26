@@ -14,6 +14,8 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { api } from "@/lib/api";
+import { LinearGradient } from "expo-linear-gradient";
+
 
 /* ------------ Types (yours) ------------ */
 type User = {
@@ -417,10 +419,18 @@ export default function UserManagement() {
           <Text style={styles.subtle}>Manage system users and their roles</Text>
         </View>
 
-        <Pressable style={styles.addBtn} onPress={startAdd}>
-          <Feather name="plus" size={16} color="#fff" />
-          <Text style={styles.addBtnText}>  Add User</Text>
-        </Pressable>
+        <LinearGradient
+  colors={["#FFD84D", "#FFC107"]}
+  start={{ x: 0, y: 0 }}
+  end={{ x: 1, y: 1 }}
+  style={styles.addBtn}
+>
+  <Pressable style={styles.addBtnInner} onPress={startAdd}>
+    <Feather name="plus" size={16} color="#fff" />
+    <Text style={styles.addBtnText}>  Add User</Text>
+  </Pressable>
+</LinearGradient>
+
       </View>
 
       {/* Pending Registration Requests */}
@@ -461,46 +471,65 @@ export default function UserManagement() {
       </View>
 
       {/* Users table */}
-      <View style={styles.card}>
-        <View style={[styles.row, styles.thead]}>
-          <Text style={[styles.cellName, styles.bold]}>Name</Text>
-          <Text style={[styles.cellEmail, styles.bold]}>Email</Text>
-          <Text style={[styles.cellSmall, styles.bold]}>Role</Text>
-          <Text style={[styles.cellSmall, styles.bold]}>Status</Text>
-          <Text style={[styles.cellActions, styles.bold]}>Actions</Text>
+{/* Users (cards, one per row) */}
+<View style={{ gap: 12 }}>
+  {usersLoading ? <ActivityIndicator style={{ marginTop: 10 }} /> : null}
+
+  {users.length === 0 && !usersLoading ? (
+    <View style={styles.card}>
+      <Text style={{ color: "#6b7280" }}>No users yet.</Text>
+    </View>
+  ) : null}
+
+  <FlatList
+    data={users}
+    keyExtractor={(i) => i.id}
+    scrollEnabled={false}
+    renderItem={({ item }) => (
+      <LinearGradient
+        colors={["#FFFFFF", "#FFFFFF"]} // soft yellow → brighter yellow
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.userCard}
+      >
+        <View style={styles.userTopRow}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={styles.userName}>{item.name}</Text>
+            <View style={styles.rolePill}>
+              <Feather name="user" size={12} color="#7a5d00" />
+              <Text style={styles.rolePillText}>{item.role}</Text>
+            </View>
+          </View>
+
+          <View style={styles.actionsInline}>
+            <Pressable style={styles.iconBtnSoft} onPress={() => startEdit(item)} hitSlop={8}>
+              <Feather name="edit-2" size={16} color="#7a5d00" />
+            </Pressable>
+            <Pressable style={styles.iconBtnSoft} onPress={() => confirmDelete(item)} hitSlop={8}>
+              <Feather name="trash-2" size={16} color="#7a5d00" />
+            </Pressable>
+          </View>
         </View>
 
-        {usersLoading ? <ActivityIndicator style={{ marginTop: 10 }} /> : null}
+        <View style={styles.userBottomRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.emailLabel}>Email</Text>
+            <Text style={styles.emailValue}>{item.email}</Text>
+          </View>
 
-        <FlatList
-          data={users}
-          keyExtractor={(i) => i.id}
-          scrollEnabled={false}
-          ListEmptyComponent={!usersLoading ? <Text style={{ padding: 12, color: "#6b7280" }}>No users yet.</Text> : null}
-          renderItem={({ item }) => (
-            <View style={[styles.row, styles.trow]}>
-              <Text style={styles.cellName}>{item.name}</Text>
-              <Text style={styles.cellEmail}>{item.email}</Text>
-              <Text style={styles.cellSmall}>{item.role}</Text>
-              <View style={[styles.cellSmall, { alignItems: "flex-start" }]}>
-                <View style={[styles.badge, item.status === "Active" ? styles.badgeGreen : styles.badgeGray]}>
-                  <Text style={[styles.badgeText, item.status === "Active" ? styles.badgeTextOn : styles.badgeTextOff]}>
-                    {item.status}
-                  </Text>
-                </View>
-              </View>
-              <View style={[styles.cellActions, { flexDirection: "row", gap: 8 }]}>
-                <Pressable style={styles.iconBtn} onPress={() => startEdit(item)}>
-                  <Feather name="edit-2" size={16} />
-                </Pressable>
-                <Pressable style={styles.iconBtn} onPress={() => confirmDelete(item)}>
-                  <Feather name="trash-2" size={16} />
-                </Pressable>
-              </View>
+          <View style={{ alignItems: "flex-end", justifyContent: "center" }}>
+            <View style={[styles.badge, item.status === "Active" ? styles.badgeGreen : styles.badgeGray]}>
+              <Text style={[styles.badgeText, item.status === "Active" ? styles.badgeTextOn : styles.badgeTextOff]}>
+                {item.status}
+              </Text>
             </View>
-          )}
-        />
-      </View>
+          </View>
+        </View>
+      </LinearGradient>
+    )}
+  />
+</View>
+
 
       {/* Add/Edit Modal */}
       <Modal transparent visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
@@ -707,8 +736,23 @@ const styles = StyleSheet.create({
   h1: { fontSize: 24, fontWeight: "700" },
   subtle: { color: "#6b7280" },
 
-  addBtn: { flexDirection: "row", alignItems: "center", backgroundColor: "#111827", paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
-  addBtnText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  addBtn: {
+    borderRadius: 10,
+    overflow: "hidden", // important so gradient corners clip properly
+  },
+  addBtnInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  
+  addBtnText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
 
   card: { backgroundColor: "#fff", borderRadius: 14, padding: 12, shadowColor: "#000", shadowOpacity: 0.08, shadowOffset: { width: 0, height: 6 }, shadowRadius: 10, elevation: 3 },
 
@@ -750,6 +794,82 @@ const styles = StyleSheet.create({
 
   reqRow: { paddingVertical: 10, borderTopWidth: 1, borderColor: "#eef1f5", justifyContent: "space-between" },
   pillBtn: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 999 },
+  userCard: {
+    borderRadius: 14,
+    padding: 14,
+    backgroundColor: "#fff",
+    marginBottom: 12,   
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  
+  userTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  
+  userName: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#3b2f00", // dark-ish over yellow
+  },
+  
+  rolePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: "rgba(255, 204, 0, 0.25)",
+    borderWidth: 1,
+    borderColor: "rgba(200, 150, 0, 0.35)",
+  },
+  
+  rolePillText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#7a5d00",
+  },
+  
+  actionsInline: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+  },
+  
+  iconBtnSoft: {
+    padding: 8,
+    backgroundColor: "rgba(255,255,255,0.6)",
+    borderRadius: 10,
+  },
+  
+  userBottomRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  
+  emailLabel: {
+    fontSize: 12,
+    color: "#5c4a00",
+    opacity: 0.9,
+  },
+  
+  emailValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#3b2f00",
+    marginTop: 2,
+  },
+
+  
+  
 });
 
 /* Simple inline Select using native picker-like behavior */
