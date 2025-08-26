@@ -1,10 +1,35 @@
-import { Drawer } from "expo-router/drawer";
-import { useRouter } from "expo-router";
-import { signOut } from "@/lib/authStore";
-import { Feather } from "@expo/vector-icons";
-import { useEffect, useState } from "react";
-import { View, StyleSheet, Text } from "react-native";
-import { api } from "@/lib/api";
+import { Drawer } from 'expo-router/drawer';
+import { useRouter } from 'expo-router';
+import { signOut } from '@/lib/authStore';
+import { Feather } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
+import { View, StyleSheet, Text } from 'react-native';
+import { api } from '@/lib/api';
+import { LinearGradient } from 'expo-linear-gradient'; // NEW
+
+// Small gradient icon wrapper (yellow food theme)
+function GradientIcon({ name, size = 24 }: { name: any; size?: number }) {
+  const box = size + 12; // a bit of padding around the icon
+  return (
+    <LinearGradient
+      colors={['#FFE082', '#FFC107', '#FFA000']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[
+        styles.gradCircle,
+        { width: box, height: box, borderRadius: box / 2 },
+      ]}
+    >
+      <Feather
+        name={name}
+        size={size}
+        color='#fff'
+      />
+    </LinearGradient>
+  );
+}
+
+
 
 export default function SuperAdminLayout() {
   const router = useRouter();
@@ -13,32 +38,26 @@ export default function SuperAdminLayout() {
 
   const handleSignOut = () => {
     signOut();
-    router.replace("/(auth)/login");
+    router.replace('/(auth)/login');
   };
 
-  // Function to refresh pending requests count
   const refreshPendingCount = async () => {
     try {
       setIsLoading(true);
-      console.log('Fetching pending requests count...');
-      const data = await api.get<{ count: number }>('/api/admin/requests/count');
-      console.log('Received data:', data);
+      const data = await api.get<{ count: number }>(
+        '/api/admin/requests/count'
+      );
       setPendingRequests(data.count);
     } catch (error) {
       console.error('Error fetching pending requests count:', error);
-      // Keep the previous count on error, but set to 0 if this is the first call
-      if (pendingRequests === 0) {
-        setPendingRequests(0);
-      }
+      if (pendingRequests === 0) setPendingRequests(0);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fetch pending registration requests count
   useEffect(() => {
     refreshPendingCount();
-    // Refresh every 30 seconds
     const interval = setInterval(refreshPendingCount, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -46,28 +65,36 @@ export default function SuperAdminLayout() {
   return (
     <Drawer
       screenOptions={{
-        headerTitle: "SuperAdmin",
+        headerTitle: 'SuperAdmin',
+        drawerActiveTintColor: '#7A4F01',
+        drawerActiveBackgroundColor: 'rgba(255,193,7,0.12)',
       }}
     >
-      {/* Map file routes to drawer items with nice titles */}
-      <Drawer.Screen 
-        name="overview" 
-        options={{ 
-          title: "Overview",
-          drawerIcon: ({ color, size }) => (
-            <Feather name="home" size={size} color={color} />
-          ),
-        }} 
-      />
-      
-      {/* Custom User Management with notification dot */}
       <Drawer.Screen
-        name="user-management"
+        name='overview'
         options={{
-          title: `User Management${pendingRequests > 0 ? ` (${pendingRequests} pending)` : ''}`,
-          drawerIcon: ({ color, size }) => (
+          title: 'Overview',
+          drawerIcon: ({ size }) => (
+            <GradientIcon
+              name='home'
+              size={size}
+            />
+          ),
+        }}
+      />
+
+      <Drawer.Screen
+        name='user-management'
+        options={{
+          title: `User Management${
+            pendingRequests > 0 ? ` (${pendingRequests} pending)` : ''
+          }`,
+          drawerIcon: ({ size }) => (
             <View style={styles.iconContainer}>
-              <Feather name="users" size={size} color={color} />
+              <GradientIcon
+                name='users'
+                size={size}
+              />
               {pendingRequests > 0 && (
                 <View style={styles.countBadge}>
                   <Text style={styles.countText}>{pendingRequests}</Text>
@@ -78,98 +105,128 @@ export default function SuperAdminLayout() {
         }}
         listeners={{
           focus: () => {
-            // Refresh pending requests count when screen is focused
             refreshPendingCount();
           },
         }}
       />
-      
-      <Drawer.Screen 
-        name="food-items" 
-        options={{ 
-          title: "Food Items",
-          drawerIcon: ({ color, size }) => (
-            <Feather name="coffee" size={size} color={color} />
+
+      <Drawer.Screen
+        name='food-items'
+        options={{
+          title: 'Food Items',
+          drawerIcon: ({ size }) => (
+            <GradientIcon
+              name='coffee'
+              size={size}
+            />
           ),
-        }} 
+        }}
       />
-      <Drawer.Screen 
-        name="inventory" 
-        options={{ 
-          title: "Inventory",
-          drawerIcon: ({ color, size }) => (
-            <Feather name="package" size={size} color={color} />
+      <Drawer.Screen
+        name='inventory'
+        options={{
+          title: 'Inventory',
+          drawerIcon: ({ size }) => (
+            <GradientIcon
+              name='package'
+              size={size}
+            />
           ),
-        }} 
+        }}
       />
-      <Drawer.Screen 
-        name="routes-management" 
-        options={{ 
-          title: "Routes Management",
-          drawerIcon: ({ color, size }) => (
-            <Feather name="map" size={size} color={color} />
+      <Drawer.Screen
+        name='routes-management'
+        options={{
+          title: 'Routes Management',
+          drawerIcon: ({ size }) => (
+            <GradientIcon
+              name='map'
+              size={size}
+            />
           ),
-        }} 
+        }}
       />
-      <Drawer.Screen 
-        name="team-management" 
-        options={{ 
-          title: "Team Management",
-          drawerIcon: ({ color, size }) => (
-            <Feather name="users" size={size} color={color} />
+      <Drawer.Screen
+        name='team-management'
+        options={{
+          title: 'Team Management',
+          drawerIcon: ({ size }) => (
+            <GradientIcon
+              name='users'
+              size={size}
+            />
           ),
-        }} 
+        }}
       />
-      <Drawer.Screen 
-        name="combos-management" 
-        options={{ 
-          title: "Combos Management",
-          drawerIcon: ({ color, size }) => (
-            <Feather name="layers" size={size} color={color} />
+      <Drawer.Screen
+        name='combos-management'
+        options={{
+          title: 'Combos Management',
+          drawerIcon: ({ size }) => (
+            <GradientIcon
+              name='layers'
+              size={size}
+            />
           ),
-        }} 
+        }}
       />
-      <Drawer.Screen 
-        name="vehicles-management" 
-        options={{ 
-          title: "Vehicles Management",
-          drawerIcon: ({ color, size }) => (
-            <Feather name="truck" size={size} color={color} />
+      <Drawer.Screen
+        name='vehicles-management'
+        options={{
+          title: 'Vehicles Management',
+          drawerIcon: ({ size }) => (
+            <GradientIcon
+              name='truck'
+              size={size}
+            />
           ),
-        }} 
+        }}
       />
-      <Drawer.Screen 
-        name="analytics" 
-        options={{ 
-          title: "Analytics",
-          drawerIcon: ({ color, size }) => (
-            <Feather name="bar-chart-2" size={size} color={color} />
+      <Drawer.Screen
+        name='analytics'
+        options={{
+          title: 'Analytics',
+          drawerIcon: ({ size }) => (
+            <GradientIcon
+              name='bar-chart-2'
+              size={size}
+            />
           ),
-        }} 
+        }}
       />
 
-      {/* Custom Signout Button */}
       <Drawer.Screen
-        name="signout"
+        name='signout'
         options={{
-          title: "Sign Out",
+          title: 'Sign Out',
           drawerItemStyle: { marginTop: 'auto' },
-          drawerIcon: ({ color, size }) => (
-            <Feather name="log-out" size={size} color={color} />
+          drawerIcon: ({ size }) => (
+            <GradientIcon
+              name='log-out'
+              size={size}
+            />
           ),
         }}
         listeners={{
           focus: () => {
-            // This will be handled by the custom component
+            // handled elsewhere if needed
           },
         }}
       />
-
     </Drawer>
   );
 }
 
 const styles = StyleSheet.create({
+  gradCircle: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#FFA000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
   iconContainer: {
     position: 'relative',
   },
