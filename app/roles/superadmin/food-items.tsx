@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from "expo-linear-gradient";
 
 // ---- Local fallback images (kept for placeholders) ----
 const Chai = require('../../../assets/chai.png');
@@ -329,17 +330,18 @@ export default function FoodItems() {
           <Text style={styles.h1}>Food Items</Text>
           <Text style={styles.muted}>Manage menu items and pricing</Text>
         </View>
-        <Pressable
-          style={styles.addBtn}
-          onPress={openAdd}
-        >
-          <Feather
-            name='plus'
-            size={16}
-            color='#fff'
-          />
-          <Text style={styles.addBtnText}> Add Food Item</Text>
-        </Pressable>
+        <Pressable onPress={openAdd} style={styles.addBtn}>
+  <LinearGradient
+    colors={["#FDE047", "#F59E0B"]}      // yellow → amber
+    start={{ x: 0, y: 0 }}
+    end={{ x: 1, y: 1 }}
+    style={styles.addBtnGrad}
+  >
+    <Feather name="plus" size={16} color="#ffffff" />
+    <Text style={styles.addBtnTextYellow}>  Add Food Item</Text>
+  </LinearGradient>
+</Pressable>
+
       </View>
 
       {/* Loader */}
@@ -594,11 +596,32 @@ const styles = StyleSheet.create({
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#111827',
+    backgroundColor: "transparent",
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 10,
   },
+
+  addBtnGrad: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 10,
+    // optional: subtle shadow
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  
+  addBtnTextYellow: {
+    color: "#ffffff",       // dark text reads best on yellow
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
   addBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 
   row: { flexDirection: 'row', gap: 16 },
