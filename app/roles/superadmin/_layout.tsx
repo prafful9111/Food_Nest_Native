@@ -213,7 +213,28 @@ export default function SuperAdminLayout() {
           },
         }}
       />
+
+<Drawer.Screen
+  // 👇 Use the route name that matches your file
+  // If your file is app/(superadmin)/MiscellaneousExpensesScreen.tsx use this:
+  name="MiscellaneousExpensesScreen"
+  // If you renamed it to app/(superadmin)/misc-expenses.tsx, then use:
+  // name="misc-expenses"
+  options={{
+    title: "Expenses",          // header title
+    drawerLabel: "Expenses",    // drawer item label
+    drawerIcon: ({ size }) => (
+      <GradientIcon name="credit-card" size={size} />
+    ),
+  }}
+/>
+
+
+      
     </Drawer>
+
+    
+    
   );
 }
 
