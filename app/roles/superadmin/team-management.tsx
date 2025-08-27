@@ -714,6 +714,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 12,
   },
 
   h1: { fontSize: 22, fontWeight: '800', color: '#111827' },
@@ -746,7 +748,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#2563eb',
-    borderRadius: 999,
+    borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
@@ -764,14 +766,14 @@ const styles = StyleSheet.create({
 
   /* NEW: yellow gradient button wrapper + inner pressable */
   btnGradient: {
-    borderRadius: 999,
+    borderRadius: 12,
   },
   btnGradientInner: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 999,
+    borderRadius: 12,
   },
   btnGradientText: { color: '#ffffff', fontWeight: '800' },
 
