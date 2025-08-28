@@ -42,6 +42,10 @@ type Item = {
 
   // NEW: raw materials / ingredients (optional)
   rawMaterials?: Array<{ name: string; qty?: number; unit?: string }>;
+
+  // NEW: quantities
+  totalQuantity?: { amount?: number; unit?: string };
+  perServing?: { amount?: number; unit?: string };
 };
 
 const toINR = (thb: number) => Math.round(thb * 2.5);
@@ -72,6 +76,12 @@ export default function FoodItems() {
     Array<{ name: string; qty: string; unit: string }>
   >([{ name: '', qty: '', unit: '' }]);
 
+  // NEW: quantities (amounts as strings for inputs)
+  const [totalQty, setTotalQty] = useState<string>('');       // amount
+  const [totalUnit, setTotalUnit] = useState<string>('');     // unit
+  const [perServQty, setPerServQty] = useState<string>('');   // amount
+  const [perServUnit, setPerServUnit] = useState<string>(''); // unit
+
   function addRawMaterialRow() {
     setRawMaterials((arr) => [...arr, { name: '', qty: '', unit: '' }]);
   }
@@ -100,6 +110,11 @@ export default function FoodItems() {
     setPicked(null);
     // NEW
     setRawMaterials([{ name: '', qty: '', unit: '' }]);
+    // NEW: reset quantities
+    setTotalQty('');
+    setTotalUnit('');
+    setPerServQty('');
+    setPerServUnit('');
   };
 
   const openAdd = () => {
@@ -128,6 +143,16 @@ export default function FoodItems() {
     } else {
       setRawMaterials([{ name: '', qty: '', unit: '' }]);
     }
+
+    // NEW: prefill quantities
+    setTotalQty(
+      it.totalQuantity?.amount != null ? String(it.totalQuantity.amount) : ''
+    );
+    setTotalUnit(it.totalQuantity?.unit || '');
+    setPerServQty(
+      it.perServing?.amount != null ? String(it.perServing.amount) : ''
+    );
+    setPerServUnit(it.perServing?.unit || '');
 
     setIsAdding(true);
   };
@@ -318,6 +343,23 @@ export default function FoodItems() {
         unit: r.unit || undefined,
       }));
 
+    // NEW: build quantities payloads (send only if amount is provided)
+    const totalQuantityPayload =
+      totalQty.trim() === ''
+        ? undefined
+        : {
+            amount: Number(totalQty),
+            unit: totalUnit.trim() || undefined,
+          };
+
+    const perServingPayload =
+      perServQty.trim() === ''
+        ? undefined
+        : {
+            amount: Number(perServQty),
+            unit: perServUnit.trim() || undefined,
+          };
+
     setSaving(true);
     try {
       if (editing) {
@@ -332,6 +374,13 @@ export default function FoodItems() {
           fd.append('available', String(available));
           // NEW: include rawMaterials in multipart
           fd.append('rawMaterials', JSON.stringify(cleanRawMaterials));
+          // NEW: include quantities in multipart if present
+          if (totalQuantityPayload) {
+            fd.append('totalQuantity', JSON.stringify(totalQuantityPayload));
+          }
+          if (perServingPayload) {
+            fd.append('perServing', JSON.stringify(perServingPayload));
+          }
           // Use robust file-part builder
           await appendPickedImage(fd, picked);
           updated = await apiSend<Item>(
@@ -349,6 +398,8 @@ export default function FoodItems() {
             available,
             // NEW
             rawMaterials: cleanRawMaterials,
+            ...(totalQuantityPayload ? { totalQuantity: totalQuantityPayload } : {}),
+            ...(perServingPayload ? { perServing: perServingPayload } : {}),
           });
         }
         setItems((arr) =>
@@ -363,6 +414,13 @@ export default function FoodItems() {
         fd.append('available', String(available));
         // NEW: include rawMaterials in multipart
         fd.append('rawMaterials', JSON.stringify(cleanRawMaterials));
+        // NEW: include quantities in multipart if present
+        if (totalQuantityPayload) {
+          fd.append('totalQuantity', JSON.stringify(totalQuantityPayload));
+        }
+        if (perServingPayload) {
+          fd.append('perServing', JSON.stringify(perServingPayload));
+        }
         if (picked) {
           // Use robust file-part builder
           await appendPickedImage(fd, picked);
@@ -394,29 +452,33 @@ export default function FoodItems() {
   return (
     <ScrollView contentContainerStyle={styles.page}>
       {/* Header */}
+      {/* Header */}
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.h1}>Food Items</Text>
-          <Text style={styles.muted}>Manage menu items and pricing</Text>
-        </View>
-        <Pressable
-          onPress={openAdd}
-          style={styles.addBtn}
-        >
-          <LinearGradient
-            colors={['#FDE047', '#F59E0B']} // yellow → amber
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.addBtnGrad}
+          <Text style={styles.h1}>Today's Menu</Text>
+          <Text style={styles.muted}>
+            Set raw material quantity & assign chefs
+          </Text>
+
+          <Pressable
+            onPress={openAdd}
+            style={[styles.addBtn, styles.addBtnUnder]}
           >
-            <Feather
-              name='plus'
-              size={16}
-              color='#ffffff'
-            />
-            <Text style={styles.addBtnTextYellow}> Add Food Item</Text>
-          </LinearGradient>
-        </Pressable>
+            <LinearGradient
+              colors={['#FDE047', '#F59E0B']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.addBtnGrad}
+            >
+              <Feather
+                name='plus'
+                size={16}
+                color='#ffffff'
+              />
+              <Text style={styles.addBtnTextYellow}> Add Food Item</Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
       </View>
 
       {/* Loader */}
@@ -704,6 +766,57 @@ export default function FoodItems() {
                 </View>
               </View>
 
+              {/* NEW: Quantities */}
+              <View style={{ gap: 6, marginTop: 8 }}>
+                <Text style={styles.label}>Quantities</Text>
+
+                {/* Total quantity */}
+                <View style={[styles.formRow, { alignItems: 'center' }]}>
+                  <View style={[styles.field, { flex: 0.8 }]}>
+                    <Text style={styles.label}>Total Quantity</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g., 5"
+                      keyboardType="decimal-pad"
+                      value={totalQty}
+                      onChangeText={setTotalQty}
+                    />
+                  </View>
+                  <View style={[styles.field, { flex: 0.8 }]}>
+                    <Text style={styles.label}>Unit</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g., kg, g, L, ml, pcs"
+                      value={totalUnit}
+                      onChangeText={setTotalUnit}
+                    />
+                  </View>
+                </View>
+
+                {/* Per serving quantity */}
+                <View style={[styles.formRow, { alignItems: 'center' }]}>
+                  <View style={[styles.field, { flex: 0.8 }]}>
+                    <Text style={styles.label}>Per Serving Quantity</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g., 0.15"
+                      keyboardType="decimal-pad"
+                      value={perServQty}
+                      onChangeText={setPerServQty}
+                    />
+                  </View>
+                  <View style={[styles.field, { flex: 0.8 }]}>
+                    <Text style={styles.label}>Unit</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g., kg, g, L, ml, pcs"
+                      value={perServUnit}
+                      onChangeText={setPerServUnit}
+                    />
+                  </View>
+                </View>
+              </View>
+
               {/* Upload area */}
               <View style={{ gap: 6 }}>
                 <Text style={styles.label}>Food Image</Text>
@@ -776,13 +889,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   h1: { fontSize: 24, fontWeight: '700' },
-  muted: { color: '#6b7280' },
+  muted: { color: '#6b7280', paddingTop: 6 }  ,
 
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'transparent',
-    paddingHorizontal: 14,
+    paddingHorizontal: 6,
     paddingVertical: 10,
     borderRadius: 10,
   },
@@ -988,4 +1101,9 @@ const styles = StyleSheet.create({
   modalHeader: { marginBottom: 4 },
   modalScroll: {},
   modalContent: { gap: 12, paddingBottom: 8 },
+  addBtnUnder: {
+    alignSelf: 'flex-start',
+    marginTop: 5,
+  },
+  
 });
