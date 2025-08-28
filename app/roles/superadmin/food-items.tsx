@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { LinearGradient } from "expo-linear-gradient";
+import { LinearGradient } from 'expo-linear-gradient';
 
 // ---- Local fallback images (kept for placeholders) ----
 const Chai = require('../../../assets/chai.png');
@@ -77,7 +77,11 @@ export default function FoodItems() {
   function removeRawMaterialRow(idx: number) {
     setRawMaterials((arr) => arr.filter((_, i) => i !== idx));
   }
-  function updateRawMaterial(idx: number, key: 'name' | 'qty' | 'unit', val: string) {
+  function updateRawMaterial(
+    idx: number,
+    key: 'name' | 'qty' | 'unit',
+    val: string
+  ) {
     setRawMaterials((arr) => {
       const next = [...arr];
       next[idx] = { ...next[idx], [key]: val };
@@ -261,21 +265,32 @@ export default function FoodItems() {
     return { uri, name, type } as any;
   }
 
-  async function appendPickedImage(fd: FormData, picked: { uri: string; type?: string; name?: string; mimeType?: string; fileName?: string }) {
+  async function appendPickedImage(
+    fd: FormData,
+    picked: {
+      uri: string;
+      type?: string;
+      name?: string;
+      mimeType?: string;
+      fileName?: string;
+    }
+  ) {
     if (!picked) return;
-  
+
     // build a solid name/type using your existing logic
     const part = toFilePart(picked); // returns { uri, name, type }
-  
-    if (Platform.OS === "web") {
+
+    if (Platform.OS === 'web') {
       const resp = await fetch(part.uri);
       const blob = await resp.blob();
       // Some browsers need a File to keep the filename
-      const file = new File([blob], part.name, { type: part.type || blob.type || "image/jpeg" });
-      fd.append("image", file);
+      const file = new File([blob], part.name, {
+        type: part.type || blob.type || 'image/jpeg',
+      });
+      fd.append('image', file);
     } else {
       // iOS/Android RN style
-      fd.append("image", part as any);
+      fd.append('image', part as any);
     }
   }
 
@@ -374,11 +389,6 @@ export default function FoodItems() {
   };
 
   // 2-column card layout
-  const rows = useMemo(() => {
-    const r: Item[][] = [];
-    for (let i = 0; i < items.length; i += 2) r.push(items.slice(i, i + 2));
-    return r;
-  }, [items]);
 
   return (
     <ScrollView contentContainerStyle={styles.page}>
@@ -388,18 +398,24 @@ export default function FoodItems() {
           <Text style={styles.h1}>Food Items</Text>
           <Text style={styles.muted}>Manage menu items and pricing</Text>
         </View>
-        <Pressable onPress={openAdd} style={styles.addBtn}>
+        <Pressable
+          onPress={openAdd}
+          style={styles.addBtn}
+        >
           <LinearGradient
-            colors={["#FDE047", "#F59E0B"]}      // yellow → amber
+            colors={['#FDE047', '#F59E0B']} // yellow → amber
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.addBtnGrad}
           >
-            <Feather name="plus" size={16} color="#ffffff" />
-            <Text style={styles.addBtnTextYellow}>  Add Food Item</Text>
+            <Feather
+              name='plus'
+              size={16}
+              color='#ffffff'
+            />
+            <Text style={styles.addBtnTextYellow}> Add Food Item</Text>
           </LinearGradient>
         </Pressable>
-
       </View>
 
       {/* Loader */}
@@ -409,98 +425,118 @@ export default function FoodItems() {
         </View>
       ) : (
         <View style={{ gap: 16 }}>
-          {rows.map((row, i) => (
+          {items.map((item) => (
             <View
-              key={i}
-              style={styles.row}
+              key={item._id}
+              style={styles.cardRow}
             >
-              {row.map((item) => (
-                <View
-                  key={item._id}
-                  style={styles.card}
-                >
-                  {/* Image */}
-                  <View style={styles.imageBox}>
-                    {item.imageUrl ? (
-                      <Image
-                        source={{ uri: item.imageUrl }}
-                        style={{ width: '100%', height: '100%' }}
-                        resizeMode='cover'
-                      />
-                    ) : item.image ? (
-                      <Image
-                        source={item.image}
-                        style={{ width: '100%', height: '100%' }}
-                        resizeMode='cover'
-                      />
-                    ) : (
-                      <View style={styles.placeholderBox}>
-                        <Feather
-                          name='image'
-                          size={28}
-                          color='#9CA3AF'
-                        />
-                        <Text style={styles.placeholderText}>No image</Text>
-                      </View>
-                    )}
+              {/* Image (square thumb) */}
+              <View style={styles.thumbBox}>
+                {item.imageUrl ? (
+                  <Image
+                    source={{ uri: item.imageUrl }}
+                    style={{ width: '100%', height: '100%' }}
+                    resizeMode='cover'
+                  />
+                ) : item.image ? (
+                  <Image
+                    source={item.image}
+                    style={{ width: '100%', height: '100%' }}
+                    resizeMode='cover'
+                  />
+                ) : (
+                  <View style={styles.placeholderBox}>
+                    <Feather
+                      name='image'
+                      size={28}
+                      color='#9CA3AF'
+                    />
+                    <Text style={styles.placeholderText}>No image</Text>
                   </View>
+                )}
+              </View>
 
-                  {/* Title + badge */}
-                  <View style={styles.cardHeader}>
-                    <View>
-                      <Text style={styles.cardTitle}>{item.name}</Text>
-                      <Text style={styles.cardDesc}>{item.category}</Text>
-                    </View>
-                    <View
+              {/* Middle content */}
+              <View style={styles.cardBody}>
+                <View style={styles.cardHeaderRow}>
+                  <View>
+                    <Text style={styles.cardTitle}>{item.name}</Text>
+                    <Text style={styles.cardDesc}>{item.category}</Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.badge,
+                      item.available ? styles.badgeOn : styles.badgeOff,
+                    ]}
+                  >
+                    <Text
                       style={[
-                        styles.badge,
-                        item.available ? styles.badgeOn : styles.badgeOff,
+                        styles.badgeText,
+                        item.available
+                          ? styles.badgeTextOn
+                          : styles.badgeTextOff,
                       ]}
                     >
-                      <Text
-                        style={[
-                          styles.badgeText,
-                          item.available
-                            ? styles.badgeTextOn
-                            : styles.badgeTextOff,
-                        ]}
-                      >
-                        {item.available ? 'Available' : 'Unavailable'}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Price + actions */}
-                  <View style={styles.cardFooter}>
-                    <Text style={styles.price}>
-                      ฿{item.price}
-                      <Text style={styles.inr}> INR {toINR(item.price)}</Text>
+                      {item.available ? 'Available' : 'Unavailable'}
                     </Text>
-
-                    <View style={styles.actions}>
-                      <Pressable
-                        style={styles.iconBtn}
-                        onPress={() => openEdit(item)}
-                      >
-                        <Feather
-                          name='edit-2'
-                          size={18}
-                        />
-                      </Pressable>
-                      <Pressable
-                        style={styles.iconBtn}
-                        onPress={() => remove(item._id)}
-                      >
-                        <Feather
-                          name='trash-2'
-                          size={18}
-                        />
-                      </Pressable>
-                    </View>
                   </View>
                 </View>
-              ))}
-              {row.length === 1 && <View style={{ flex: 1 }} />}
+
+                {/* NEW: Raw materials */}
+                {Array.isArray(item.rawMaterials) &&
+                  item.rawMaterials.length > 0 && (
+                    <View style={{ marginTop: 6 }}>
+                      <Text style={styles.rmLabel}>Raw materials</Text>
+                      <Text
+                        style={styles.rmText}
+                        numberOfLines={2}
+                      >
+                        {item.rawMaterials
+                          .map(
+                            (r) =>
+                              `${r.name}${
+                                r.qty != null
+                                  ? ` (${r.qty}${r.unit ? ' ' + r.unit : ''})`
+                                  : ''
+                              }`
+                          )
+                          .join(', ')}
+                      </Text>
+                    </View>
+                  )}
+
+                {/* Price + actions */}
+                <View style={styles.cardFooterRow}>
+                  <Text style={styles.price}>
+                    ฿{item.price}
+                    <Text style={styles.inr}>
+                      {' '}
+                      INR {Math.round(item.price * 2.5)}
+                    </Text>
+                  </Text>
+
+                  <View style={styles.actions}>
+                    <Pressable
+                      style={styles.iconBtn}
+                      onPress={() => openEdit(item)}
+                    >
+                      <Feather
+                        name='edit-2'
+                        size={18}
+                      />
+                    </Pressable>
+                    <Pressable
+                      style={styles.iconBtn}
+                      onPress={() => remove(item._id)}
+                    >
+                      <Feather
+                        name='trash-2'
+                        size={18}
+                      />
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
             </View>
           ))}
         </View>
@@ -584,12 +620,15 @@ export default function FoodItems() {
               <Text style={styles.label}>Raw Materials / Ingredients</Text>
 
               {rawMaterials.map((rm, idx) => (
-                <View key={idx} style={[styles.formRow, { alignItems: 'center' }]}>
+                <View
+                  key={idx}
+                  style={[styles.formRow, { alignItems: 'center' }]}
+                >
                   <View style={[styles.field, { flex: 1.2 }]}>
                     <Text style={styles.label}>Name</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g., Poha, Oil, Peanuts"
+                      placeholder='e.g., Poha, Oil, Peanuts'
                       value={rm.name}
                       onChangeText={(v) => updateRawMaterial(idx, 'name', v)}
                     />
@@ -598,8 +637,8 @@ export default function FoodItems() {
                     <Text style={styles.label}>Qty</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g., 0.5"
-                      keyboardType="decimal-pad"
+                      placeholder='e.g., 0.5'
+                      keyboardType='decimal-pad'
                       value={rm.qty}
                       onChangeText={(v) => updateRawMaterial(idx, 'qty', v)}
                     />
@@ -608,7 +647,7 @@ export default function FoodItems() {
                     <Text style={styles.label}>Unit</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g., kg, g, ml, tbsp"
+                      placeholder='e.g., kg, g, ml, tbsp'
                       value={rm.unit}
                       onChangeText={(v) => updateRawMaterial(idx, 'unit', v)}
                     />
@@ -618,16 +657,33 @@ export default function FoodItems() {
                     onPress={() => removeRawMaterialRow(idx)}
                     style={[styles.iconBtn, { marginTop: 24 }]}
                   >
-                    <Feather name="minus" size={18} />
+                    <Feather
+                      name='minus'
+                      size={18}
+                    />
                   </Pressable>
                 </View>
               ))}
 
-              <View style={{ flexDirection: 'row', justifyContent: 'flex-start' }}>
-                <Pressable onPress={addRawMaterialRow} style={styles.iconBtn}>
-                  <Feather name="plus" size={18} />
+              <View
+                style={{ flexDirection: 'row', justifyContent: 'flex-start' }}
+              >
+                <Pressable
+                  onPress={addRawMaterialRow}
+                  style={styles.iconBtn}
+                >
+                  <Feather
+                    name='plus'
+                    size={18}
+                  />
                 </Pressable>
-                <Text style={{ alignSelf: 'center', marginLeft: 8, color: '#6b7280' }}>
+                <Text
+                  style={{
+                    alignSelf: 'center',
+                    marginLeft: 8,
+                    color: '#6b7280',
+                  }}
+                >
                   Add another material
                 </Text>
               </View>
@@ -708,30 +764,30 @@ const styles = StyleSheet.create({
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: "transparent",
+    backgroundColor: 'transparent',
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 10,
   },
 
   addBtnGrad: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 10,
     // optional: subtle shadow
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 10,
     elevation: 3,
   },
-  
+
   addBtnTextYellow: {
-    color: "#ffffff",
+    color: '#ffffff',
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
   },
 
   addBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
@@ -859,4 +915,55 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
   },
   placeholderText: { marginTop: 6, color: '#9CA3AF', fontSize: 12 },
+
+  cardRow: {
+    flexDirection: 'row',
+    gap: 12,
+    backgroundColor: 'white',
+    borderRadius: 14,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 10,
+    elevation: 3,
+  },
+
+  thumbBox: {
+    width: 84,
+    height: 84,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#f3f4f6',
+  },
+
+  cardBody: {
+    flex: 1,
+    minHeight: 84,
+  },
+
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+
+  cardFooterRow: {
+    marginTop: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  rmLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#374151',
+    opacity: 0.8,
+  },
+
+  rmText: {
+    color: '#6b7280',
+    marginTop: 2,
+  },
 });
