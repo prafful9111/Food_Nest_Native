@@ -38,6 +38,9 @@ type Item = {
   imageUrl?: string | null; // served from backend
   // UI-only fallback for old seeds
   image?: any;
+
+  // NEW: raw materials / ingredients (optional)
+  rawMaterials?: Array<{ name: string; qty?: number; unit?: string }>;
 };
 
 const toINR = (thb: number) => Math.round(thb * 2.5);
@@ -63,6 +66,25 @@ export default function FoodItems() {
     mimeType?: string;
   } | null>(null);
 
+  // NEW: raw materials (UI state uses strings for inputs)
+  const [rawMaterials, setRawMaterials] = useState<
+    Array<{ name: string; qty: string; unit: string }>
+  >([{ name: '', qty: '', unit: '' }]);
+
+  function addRawMaterialRow() {
+    setRawMaterials((arr) => [...arr, { name: '', qty: '', unit: '' }]);
+  }
+  function removeRawMaterialRow(idx: number) {
+    setRawMaterials((arr) => arr.filter((_, i) => i !== idx));
+  }
+  function updateRawMaterial(idx: number, key: 'name' | 'qty' | 'unit', val: string) {
+    setRawMaterials((arr) => {
+      const next = [...arr];
+      next[idx] = { ...next[idx], [key]: val };
+      return next;
+    });
+  }
+
   const resetForm = () => {
     setEditing(null);
     setName('');
@@ -71,6 +93,8 @@ export default function FoodItems() {
     setTax('');
     setAvailable(true);
     setPicked(null);
+    // NEW
+    setRawMaterials([{ name: '', qty: '', unit: '' }]);
   };
 
   const openAdd = () => {
@@ -86,6 +110,20 @@ export default function FoodItems() {
     setTax(it.tax ? String(it.tax) : '');
     setAvailable(it.available);
     setPicked(null); // don't prefill image picker
+
+    // NEW: prefill raw materials if present
+    if (it.rawMaterials && it.rawMaterials.length) {
+      setRawMaterials(
+        it.rawMaterials.map((r) => ({
+          name: r.name || '',
+          qty: r.qty !== undefined && r.qty !== null ? String(r.qty) : '',
+          unit: r.unit || '',
+        }))
+      );
+    } else {
+      setRawMaterials([{ name: '', qty: '', unit: '' }]);
+    }
+
     setIsAdding(true);
   };
 
@@ -250,6 +288,20 @@ export default function FoodItems() {
       return;
     }
 
+    // NEW: build clean rawMaterials (name required; qty optional number; unit optional)
+    const cleanRawMaterials = rawMaterials
+      .map((r) => ({
+        name: r.name.trim(),
+        qty: r.qty.trim(),
+        unit: r.unit.trim(),
+      }))
+      .filter((r) => r.name.length > 0)
+      .map((r) => ({
+        name: r.name,
+        qty: r.qty === '' ? undefined : Number(r.qty),
+        unit: r.unit || undefined,
+      }));
+
     setSaving(true);
     try {
       if (editing) {
@@ -262,6 +314,8 @@ export default function FoodItems() {
           fd.append('category', category);
           if (t !== undefined) fd.append('tax', String(t));
           fd.append('available', String(available));
+          // NEW: include rawMaterials in multipart
+          fd.append('rawMaterials', JSON.stringify(cleanRawMaterials));
           // Use robust file-part builder
           await appendPickedImage(fd, picked);
           updated = await apiSend<Item>(
@@ -277,6 +331,8 @@ export default function FoodItems() {
             category,
             tax: t,
             available,
+            // NEW
+            rawMaterials: cleanRawMaterials,
           });
         }
         setItems((arr) =>
@@ -289,6 +345,8 @@ export default function FoodItems() {
         fd.append('category', category);
         if (t !== undefined) fd.append('tax', String(t));
         fd.append('available', String(available));
+        // NEW: include rawMaterials in multipart
+        fd.append('rawMaterials', JSON.stringify(cleanRawMaterials));
         if (picked) {
           // Use robust file-part builder
           await appendPickedImage(fd, picked);
@@ -331,16 +389,16 @@ export default function FoodItems() {
           <Text style={styles.muted}>Manage menu items and pricing</Text>
         </View>
         <Pressable onPress={openAdd} style={styles.addBtn}>
-  <LinearGradient
-    colors={["#FDE047", "#F59E0B"]}      // yellow → amber
-    start={{ x: 0, y: 0 }}
-    end={{ x: 1, y: 1 }}
-    style={styles.addBtnGrad}
-  >
-    <Feather name="plus" size={16} color="#ffffff" />
-    <Text style={styles.addBtnTextYellow}>  Add Food Item</Text>
-  </LinearGradient>
-</Pressable>
+          <LinearGradient
+            colors={["#FDE047", "#F59E0B"]}      // yellow → amber
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.addBtnGrad}
+          >
+            <Feather name="plus" size={16} color="#ffffff" />
+            <Text style={styles.addBtnTextYellow}>  Add Food Item</Text>
+          </LinearGradient>
+        </Pressable>
 
       </View>
 
@@ -521,6 +579,60 @@ export default function FoodItems() {
               </View>
             </View>
 
+            {/* NEW: Raw Materials / Ingredients */}
+            <View style={{ gap: 6, marginTop: 8 }}>
+              <Text style={styles.label}>Raw Materials / Ingredients</Text>
+
+              {rawMaterials.map((rm, idx) => (
+                <View key={idx} style={[styles.formRow, { alignItems: 'center' }]}>
+                  <View style={[styles.field, { flex: 1.2 }]}>
+                    <Text style={styles.label}>Name</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g., Poha, Oil, Peanuts"
+                      value={rm.name}
+                      onChangeText={(v) => updateRawMaterial(idx, 'name', v)}
+                    />
+                  </View>
+                  <View style={[styles.field, { flex: 0.6 }]}>
+                    <Text style={styles.label}>Qty</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g., 0.5"
+                      keyboardType="decimal-pad"
+                      value={rm.qty}
+                      onChangeText={(v) => updateRawMaterial(idx, 'qty', v)}
+                    />
+                  </View>
+                  <View style={[styles.field, { flex: 0.7 }]}>
+                    <Text style={styles.label}>Unit</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g., kg, g, ml, tbsp"
+                      value={rm.unit}
+                      onChangeText={(v) => updateRawMaterial(idx, 'unit', v)}
+                    />
+                  </View>
+
+                  <Pressable
+                    onPress={() => removeRawMaterialRow(idx)}
+                    style={[styles.iconBtn, { marginTop: 24 }]}
+                  >
+                    <Feather name="minus" size={18} />
+                  </Pressable>
+                </View>
+              ))}
+
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-start' }}>
+                <Pressable onPress={addRawMaterialRow} style={styles.iconBtn}>
+                  <Feather name="plus" size={18} />
+                </Pressable>
+                <Text style={{ alignSelf: 'center', marginLeft: 8, color: '#6b7280' }}>
+                  Add another material
+                </Text>
+              </View>
+            </View>
+
             {/* Upload area */}
             <View style={{ gap: 6 }}>
               <Text style={styles.label}>Food Image</Text>
@@ -617,7 +729,7 @@ const styles = StyleSheet.create({
   },
   
   addBtnTextYellow: {
-    color: "#ffffff",       // dark text reads best on yellow
+    color: "#ffffff",
     fontSize: 16,
     fontWeight: "600",
   },
