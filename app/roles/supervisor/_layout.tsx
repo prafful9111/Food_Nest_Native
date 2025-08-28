@@ -49,6 +49,18 @@ export default function SupervisorLayout() {
           drawerIcon: ({ size }) => <GradientIcon name="home" size={size ?? 24} />,
         }}
       />
+            <Drawer.Screen
+        name='food-items'
+        options={{
+          title: 'Food Items',
+          drawerIcon: ({ size }) => (
+            <GradientIcon
+              name='coffee'
+              size={size}
+            />
+          ),
+        }}
+      />
       <Drawer.Screen
         name="RiderLogs"
         options={{

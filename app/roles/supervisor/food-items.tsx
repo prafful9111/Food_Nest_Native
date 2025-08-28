@@ -492,8 +492,14 @@ export default function FoodItems() {
                         numberOfLines={2}
                       >
                         {item.rawMaterials
-                          .map((r) => (r?.name || '').trim())
-                          .filter(Boolean)
+                          .map(
+                            (r) =>
+                              `${r.name}${
+                                r.qty != null
+                                  ? ` (${r.qty}${r.unit ? ' ' + r.unit : ''})`
+                                  : ''
+                              }`
+                          )
                           .join(', ')}
                       </Text>
                     </View>
@@ -611,7 +617,7 @@ export default function FoodItems() {
 
             {/* NEW: Raw Materials / Ingredients */}
             <View style={{ gap: 6, marginTop: 8 }}>
-              <Text style={styles.label}>Raw Materials</Text>
+              <Text style={styles.label}>Raw Materials / Ingredients</Text>
 
               {rawMaterials.map((rm, idx) => (
                 <View
@@ -625,6 +631,25 @@ export default function FoodItems() {
                       placeholder='e.g., Poha, Oil, Peanuts'
                       value={rm.name}
                       onChangeText={(v) => updateRawMaterial(idx, 'name', v)}
+                    />
+                  </View>
+                  <View style={[styles.field, { flex: 0.6 }]}>
+                    <Text style={styles.label}>Qty</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder='e.g., 0.5'
+                      keyboardType='decimal-pad'
+                      value={rm.qty}
+                      onChangeText={(v) => updateRawMaterial(idx, 'qty', v)}
+                    />
+                  </View>
+                  <View style={[styles.field, { flex: 0.7 }]}>
+                    <Text style={styles.label}>Unit</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder='e.g., kg, g, ml, tbsp'
+                      value={rm.unit}
+                      onChangeText={(v) => updateRawMaterial(idx, 'unit', v)}
                     />
                   </View>
 
