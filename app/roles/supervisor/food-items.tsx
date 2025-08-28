@@ -16,6 +16,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
+import { KeyboardAvoidingView } from 'react-native';
 
 // ---- Local fallback images (kept for placeholders) ----
 const Chai = require('../../../assets/chai.png');
@@ -543,6 +544,7 @@ export default function FoodItems() {
       )}
 
       {/* Add/Edit modal */}
+      {/* Add/Edit modal */}
       <Modal
         transparent
         visible={isAdding}
@@ -550,175 +552,190 @@ export default function FoodItems() {
         onRequestClose={() => setIsAdding(false)}
       >
         <View style={styles.backdrop}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>
-              {editing ? 'Edit Food Item' : 'Add New Food Item'}
-            </Text>
-            <Text style={styles.modalDesc}>Create a new menu item</Text>
-
-            <View style={styles.formRow}>
-              <View style={styles.field}>
-                <Text style={styles.label}>Food Name</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder='Enter food name'
-                  value={name}
-                  onChangeText={setName}
-                />
-              </View>
-              <View style={styles.field}>
-                <Text style={styles.label}>Price (฿)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder='0.00'
-                  keyboardType='decimal-pad'
-                  value={price}
-                  onChangeText={setPrice}
-                />
-              </View>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={styles.modalCard}
+          >
+            {/* Header */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {editing ? 'Edit Food Item' : 'Add New Food Item'}
+              </Text>
+              <Text style={styles.modalDesc}>Create a new menu item</Text>
             </View>
 
-            <View style={styles.formRow}>
-              <View style={styles.field}>
-                <Text style={styles.label}>Category</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder='e.g., Snacks, Beverages'
-                  value={category}
-                  onChangeText={setCategory}
-                />
+            {/* Scrollable form */}
+            <ScrollView
+              style={styles.modalScroll}
+              contentContainerStyle={styles.modalContent}
+              keyboardShouldPersistTaps='handled'
+              nestedScrollEnabled
+            >
+              <View style={styles.formRow}>
+                <View style={styles.field}>
+                  <Text style={styles.label}>Food Name</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder='Enter food name'
+                    value={name}
+                    onChangeText={setName}
+                  />
+                </View>
+                <View style={styles.field}>
+                  <Text style={styles.label}>Price (฿)</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder='0.00'
+                    keyboardType='decimal-pad'
+                    value={price}
+                    onChangeText={setPrice}
+                  />
+                </View>
               </View>
-              <View style={styles.field}>
-                <Text style={styles.label}>Tax / VAT (%)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder='e.g., 5'
-                  keyboardType='number-pad'
-                  value={tax}
-                  onChangeText={setTax}
-                />
+
+              <View style={styles.formRow}>
+                <View style={styles.field}>
+                  <Text style={styles.label}>Category</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder='e.g., Snacks, Beverages'
+                    value={category}
+                    onChangeText={setCategory}
+                  />
+                </View>
+                <View style={styles.field}>
+                  <Text style={styles.label}>Tax / VAT (%)</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder='e.g., 5'
+                    keyboardType='number-pad'
+                    value={tax}
+                    onChangeText={setTax}
+                  />
+                </View>
               </View>
-            </View>
 
-            <View style={[styles.formRow, { alignItems: 'center' }]}>
-              <View
-                style={[
-                  styles.field,
-                  { flexDirection: 'row', alignItems: 'center', gap: 10 },
-                ]}
-              >
-                <RNSwitch
-                  value={available}
-                  onValueChange={setAvailable}
-                />
-                <Text style={styles.label}>Available</Text>
-              </View>
-            </View>
-
-            {/* NEW: Raw Materials / Ingredients */}
-            <View style={{ gap: 6, marginTop: 8 }}>
-              <Text style={styles.label}>Raw Materials / Ingredients</Text>
-
-              {rawMaterials.map((rm, idx) => (
+              <View style={[styles.formRow, { alignItems: 'center' }]}>
                 <View
-                  key={idx}
-                  style={[styles.formRow, { alignItems: 'center' }]}
+                  style={[
+                    styles.field,
+                    { flexDirection: 'row', alignItems: 'center', gap: 10 },
+                  ]}
                 >
-                  <View style={[styles.field, { flex: 1.2 }]}>
-                    <Text style={styles.label}>Name</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder='e.g., Poha, Oil, Peanuts'
-                      value={rm.name}
-                      onChangeText={(v) => updateRawMaterial(idx, 'name', v)}
-                    />
-                  </View>
-                  <View style={[styles.field, { flex: 0.6 }]}>
-                    <Text style={styles.label}>Qty</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder='e.g., 0.5'
-                      keyboardType='decimal-pad'
-                      value={rm.qty}
-                      onChangeText={(v) => updateRawMaterial(idx, 'qty', v)}
-                    />
-                  </View>
-                  <View style={[styles.field, { flex: 0.7 }]}>
-                    <Text style={styles.label}>Unit</Text>
-                    <TextInput
-                      style={styles.input}
-                      placeholder='e.g., kg, g, ml, tbsp'
-                      value={rm.unit}
-                      onChangeText={(v) => updateRawMaterial(idx, 'unit', v)}
-                    />
-                  </View>
+                  <RNSwitch
+                    value={available}
+                    onValueChange={setAvailable}
+                  />
+                  <Text style={styles.label}>Available</Text>
+                </View>
+              </View>
 
+              {/* Raw Materials (Supervisor: Name + Qty + Unit) */}
+              <View style={{ gap: 6, marginTop: 8 }}>
+                <Text style={styles.label}>Raw Materials / Ingredients</Text>
+
+                {rawMaterials.map((rm, idx) => (
+                  <View
+                    key={idx}
+                    style={[styles.formRow, { alignItems: 'center' }]}
+                  >
+                    <View style={[styles.field, { flex: 1.2 }]}>
+                      <Text style={styles.label}>Name</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder='e.g., Poha, Oil, Peanuts'
+                        value={rm.name}
+                        onChangeText={(v) => updateRawMaterial(idx, 'name', v)}
+                      />
+                    </View>
+                    <View style={[styles.field, { flex: 0.6 }]}>
+                      <Text style={styles.label}>Qty</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder='e.g., 0.5'
+                        keyboardType='decimal-pad'
+                        value={rm.qty}
+                        onChangeText={(v) => updateRawMaterial(idx, 'qty', v)}
+                      />
+                    </View>
+                    <View style={[styles.field, { flex: 0.7 }]}>
+                      <Text style={styles.label}>Unit</Text>
+                      <TextInput
+                        style={styles.input}
+                        placeholder='e.g., kg, g, ml, tbsp'
+                        value={rm.unit}
+                        onChangeText={(v) => updateRawMaterial(idx, 'unit', v)}
+                      />
+                    </View>
+
+                    <Pressable
+                      onPress={() => removeRawMaterialRow(idx)}
+                      style={[styles.iconBtn, { marginTop: 24 }]}
+                    >
+                      <Feather
+                        name='minus'
+                        size={18}
+                      />
+                    </Pressable>
+                  </View>
+                ))}
+
+                <View
+                  style={{ flexDirection: 'row', justifyContent: 'flex-start' }}
+                >
                   <Pressable
-                    onPress={() => removeRawMaterialRow(idx)}
-                    style={[styles.iconBtn, { marginTop: 24 }]}
+                    onPress={addRawMaterialRow}
+                    style={styles.iconBtn}
                   >
                     <Feather
-                      name='minus'
+                      name='plus'
                       size={18}
                     />
                   </Pressable>
+                  <Text
+                    style={{
+                      alignSelf: 'center',
+                      marginLeft: 8,
+                      color: '#6b7280',
+                    }}
+                  >
+                    Add another material
+                  </Text>
                 </View>
-              ))}
-
-              <View
-                style={{ flexDirection: 'row', justifyContent: 'flex-start' }}
-              >
-                <Pressable
-                  onPress={addRawMaterialRow}
-                  style={styles.iconBtn}
-                >
-                  <Feather
-                    name='plus'
-                    size={18}
-                  />
-                </Pressable>
-                <Text
-                  style={{
-                    alignSelf: 'center',
-                    marginLeft: 8,
-                    color: '#6b7280',
-                  }}
-                >
-                  Add another material
-                </Text>
               </View>
-            </View>
 
-            {/* Upload area */}
-            <View style={{ gap: 6 }}>
-              <Text style={styles.label}>Food Image</Text>
-              <Pressable
-                style={styles.uploadBox}
-                onPress={pickImage}
-              >
-                {picked ? (
-                  <Image
-                    source={{ uri: picked.uri }}
-                    style={{ width: '100%', height: 160, borderRadius: 10 }}
-                  />
-                ) : (
-                  <>
-                    <Feather
-                      name='upload'
-                      size={28}
-                      color='#6b7280'
+              {/* Upload area */}
+              <View style={{ gap: 6 }}>
+                <Text style={styles.label}>Food Image</Text>
+                <Pressable
+                  style={styles.uploadBox}
+                  onPress={pickImage}
+                >
+                  {picked ? (
+                    <Image
+                      source={{ uri: picked.uri }}
+                      style={{ width: '100%', height: 160, borderRadius: 10 }}
                     />
-                    <Text style={{ color: '#6b7280', marginTop: 6 }}>
-                      Tap to upload or pick from gallery
-                    </Text>
-                    <Text style={{ color: '#9ca3af', fontSize: 12 }}>
-                      PNG, JPG up to 10MB
-                    </Text>
-                  </>
-                )}
-              </Pressable>
-            </View>
+                  ) : (
+                    <>
+                      <Feather
+                        name='upload'
+                        size={28}
+                        color='#6b7280'
+                      />
+                      <Text style={{ color: '#6b7280', marginTop: 6 }}>
+                        Tap to upload or pick from gallery
+                      </Text>
+                      <Text style={{ color: '#9ca3af', fontSize: 12 }}>
+                        PNG, JPG up to 10MB
+                      </Text>
+                    </>
+                  )}
+                </Pressable>
+              </View>
+            </ScrollView>
 
+            {/* Pinned footer */}
             <View style={styles.modalActions}>
               <Pressable
                 onPress={() => {
@@ -744,7 +761,7 @@ export default function FoodItems() {
                 )}
               </Pressable>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     </ScrollView>
@@ -861,6 +878,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     gap: 12,
+    maxHeight: '86%',
   },
   modalTitle: { fontSize: 18, fontWeight: '700' },
   modalDesc: { color: '#6b7280' },
@@ -966,4 +984,8 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     marginTop: 2,
   },
+
+  modalHeader: { marginBottom: 4 },
+  modalScroll: {},
+  modalContent: { gap: 12, paddingBottom: 8 },
 });
