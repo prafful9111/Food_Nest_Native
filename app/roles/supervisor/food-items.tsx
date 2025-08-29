@@ -14,6 +14,8 @@ import {
   Platform,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { KeyboardAvoidingView } from 'react-native';
@@ -47,6 +49,8 @@ type Item = {
   totalQuantity?: { amount?: number; unit?: string };
   perServing?: { amount?: number; unit?: string };
 };
+type Cook = { _id: string; name?: string; email?: string };
+
 
 const toINR = (thb: number) => Math.round(thb * 2.5);
 
@@ -56,6 +60,10 @@ export default function FoodItems() {
   const [isAdding, setIsAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState<Item | null>(null);
+  const [cooks, setCooks] = useState<Cook[]>([]);
+const [chosen, setChosen] = useState<Record<string, string>>({});   // foodId -> cookId
+const [sending, setSending] = useState<Record<string, boolean>>({}); // foodId -> loading
+
 
   // form state
   const [name, setName] = useState('');
@@ -187,25 +195,47 @@ export default function FoodItems() {
   };
 
   // ===== API helpers =====
-  async function apiGet<T>(path: string): Promise<T> {
-    const r = await fetch(`${API_URL}${path}`);
-    if (!r.ok) throw new Error(await r.text());
-    return (await r.json()) as T;
-  }
-  async function apiSend<T>(
-    path: string,
-    method: string,
-    body: any,
-    isForm = false
-  ): Promise<T> {
-    const r = await fetch(`${API_URL}${path}`, {
-      method,
-      headers: isForm ? undefined : { 'Content-Type': 'application/json' },
-      body: isForm ? body : JSON.stringify(body),
-    });
-    if (!r.ok) throw new Error(await r.text());
-    return (await r.json()) as T;
-  }
+  
+// Always return a clean string-to-string map (no undefined values)
+type HeadersDict = Record<string, string>;
+
+async function buildAuthHeaders(): Promise<HeadersDict> {
+  const token = await AsyncStorage.getItem('token'); // <-- if you saved as 'accessToken', change this key
+  if (!token) return {};
+  return { Authorization: `Bearer ${token}` };
+}
+
+async function apiGet<T>(path: string): Promise<T> {
+  // Build a real Headers object to satisfy TS + fetch
+  const auth = await buildAuthHeaders();
+  const headers = new Headers(auth);
+
+  const r = await fetch(`${API_URL}${path}`, { headers });
+  if (!r.ok) throw new Error(await r.text());
+  return (await r.json()) as T;
+}
+
+async function apiSend<T>(
+  path: string,
+  method: string,
+  body: any,
+  isForm = false
+): Promise<T> {
+  const auth = await buildAuthHeaders();
+  const headers = new Headers(auth);
+
+  // For JSON requests, set the content-type; for form-data, let fetch set it (boundary)
+  if (!isForm) headers.set('Content-Type', 'application/json');
+
+  const r = await fetch(`${API_URL}${path}`, {
+    method,
+    headers,
+    body: isForm ? body : JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return (await r.json()) as T;
+}
+  
 
   // ===== Load items from backend =====
   const load = async () => {
@@ -258,6 +288,19 @@ export default function FoodItems() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const list = await apiGet<Cook[]>('/api/users?role=cook');
+        setCooks(list);
+      } catch (e) {
+        console.warn('Load cooks failed', e);
+        setCooks([]);
+      }
+    })();
+  }, []);
+  
 
   // ===== Build a robust RN file part =====
   function toFilePart(p: {
@@ -447,6 +490,33 @@ export default function FoodItems() {
     }
   };
 
+  // ===== Assign to cook =====
+const setChoice = (foodId: string, cookId: string) =>
+  setChosen(prev => ({ ...prev, [foodId]: cookId }));
+
+async function sendPrepRequest(food: Item) {
+  const cookId = chosen[food._id];
+  if (!cookId) {
+    Alert.alert('Pick a cook first');
+    return;
+  }
+  setSending(s => ({ ...s, [food._id]: true }));
+  try {
+    await apiSend('/api/prep-requests', 'POST', {
+      foodId: food._id,
+      cookId,
+      // if you want to pass a quantity, use your existing field; otherwise 0:
+      quantityToPrepare: food.totalQuantity?.amount ?? 0
+    });
+    Alert.alert('Sent', 'Request forwarded to cook');
+  } catch (e: any) {
+    Alert.alert('Failed', e?.message || 'Could not send');
+  } finally {
+    setSending(s => ({ ...s, [food._id]: false }));
+  }
+}
+
+
   // 2-column card layout
 
   return (
@@ -599,6 +669,46 @@ export default function FoodItems() {
                     </Pressable>
                   </View>
                 </View>
+                {/* Assign to Cook */}
+<View style={{ marginTop: 10, gap: 8 }}>
+  <Text style={{ fontSize: 12, color: '#374151' }}>Assign cook</Text>
+
+  {/* horizontal chips as a simple dropdown substitute */}
+  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+    {cooks.map(c => (
+      <Pressable
+        key={c._id}
+        onPress={() => setChoice(item._id, c._id)}
+        style={[
+          { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: '#e5e7eb' },
+          chosen[item._id] === c._id && { backgroundColor: '#111827' }
+        ]}
+      >
+        <Text
+          style={[
+            { fontSize: 12, fontWeight: '700', color: '#374151' },
+            chosen[item._id] === c._id && { color: '#fff' }
+          ]}
+        >
+          {c.name || c.email}
+        </Text>
+      </Pressable>
+    ))}
+  </ScrollView>
+
+  <Pressable
+    onPress={() => sendPrepRequest(item)}
+    style={[styles.iconBtn, { alignSelf: 'flex-start', backgroundColor: '#111827', borderColor: '#111827' }]}
+    disabled={!!sending[item._id]}
+  >
+    {sending[item._id] ? (
+      <ActivityIndicator color="#fff" />
+    ) : (
+      <Text style={{ color: '#fff', fontWeight: '700' }}>Send</Text>
+    )}
+  </Pressable>
+</View>
+
               </View>
             </View>
           ))}

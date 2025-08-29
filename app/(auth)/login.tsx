@@ -14,6 +14,8 @@ import { signInWithToken } from "@/lib/authStore";
 import { api } from "@/lib/api";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 type Mode = "login" | "forgot" | "otp" | "reset";
 
@@ -37,21 +39,51 @@ export default function LoginScreen() {
   const buttonAnim = useRef(new Animated.Value(1)).current;
 
   const handleLogin = async () => {
-    if (!email || !password) return Alert.alert("Missing info", "Enter email and password.");
+    if (!email || !password) {
+      return Alert.alert("Missing info", "Enter email and password.");
+    }
     setBusy(true);
     try {
-      const res = await api.post<{ token: string; user: { email: string; name: string; role: any } }>(
-        "/api/auth/login",
-        { email: email.trim().toLowerCase(), password }
-      );
-      await signInWithToken(res.user, res.token);
-      router.replace("/"); // /index will Redirect by role
+      // 1) Call backend
+      const res = await api.post("/api/auth/login", {
+        email: email.trim().toLowerCase(),
+        password
+      });
+  
+      // 2) Support both axios-like and fetch-like shapes
+      const payload = (res && (res as any).data) ? (res as any).data : res;
+      const user    = payload?.user;
+      const jwt     = payload?.token || payload?.accessToken;
+  
+      if (!jwt) {
+        throw new Error("No token returned from server");
+      }
+  
+      // 3) Persist to AsyncStorage (keys used elsewhere)
+      await AsyncStorage.multiSet([
+        ["token", jwt],                                  // <— our fetch helpers read this
+        ["user", JSON.stringify(user || {})],
+        ["role", String(user?.role || "")],
+        ["userId", String(user?._id || user?.id || "")]
+      ]);
+  
+      // 4) Keep your existing auth store update (if it expects token + user)
+      await signInWithToken(user, jwt);
+  
+      // 5) Navigate (your app redirects by role on /index)
+      router.replace("/");
     } catch (e: any) {
-      Alert.alert("Login failed", e.message || "Something went wrong");
+      const msg =
+        e?.response?.data?.error ||
+        e?.response?.data?.message ||
+        e?.message ||
+        "Something went wrong";
+      Alert.alert("Login failed", String(msg));
     } finally {
       setBusy(false);
     }
   };
+  
 
   // --- Forgot password flow handlers ---
   const requestOtp = async () => {
