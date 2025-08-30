@@ -277,7 +277,7 @@ export default function MyMenu() {
                 </View>
 
                 <View style={{ width: 150 }}>
-                  <Text style={styles.label}>Quantity (kg)</Text>
+                  <Text style={styles.label}>Total quantity to prepare</Text>
                   <View style={styles.qtyWrap}>
                     <TextInput
                       value={String(item.quantity ?? 0)}
@@ -286,7 +286,7 @@ export default function MyMenu() {
                       style={styles.qtyInput}
                       placeholder="0"
                     />
-                    <Text style={styles.qtyUnit}>kg</Text>
+                    <Text style={styles.qtyUnit}>(Unit)</Text>
                   </View>
                 </View>
               </View>
