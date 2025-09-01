@@ -96,6 +96,18 @@ export default function SupervisorLayout() {
           drawerIcon: ({ size }) => <GradientIcon name="package" size={size ?? 24} />,
         }}
       />
+            <Drawer.Screen
+        name='vehicles-management'
+        options={{
+          title: 'Vehicles Management',
+          drawerIcon: ({ size }) => (
+            <GradientIcon
+              name='truck'
+              size={size}
+            />
+          ),
+        }}
+      />
 
       {/* Custom Signout Button */}
       <Drawer.Screen
