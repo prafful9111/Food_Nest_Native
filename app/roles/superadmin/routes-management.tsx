@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,9 +7,10 @@ import {
   Pressable,
   TextInput,
   Modal,
-  FlatList,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next"; // ✅ i18n
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 /** ---------- Types ---------- */
 type RouteItem = {
@@ -59,6 +60,7 @@ const seed: RouteItem[] = [
 
 /** ---------- Screen ---------- */
 export default function RoutesManagement() {
+  const { t } = useTranslation(); // ✅ i18n
   const [routes, setRoutes] = useState<RouteItem[]>(seed);
 
   // Create/Edit dialog
@@ -99,18 +101,16 @@ export default function RoutesManagement() {
 
   const save = () => {
     if (!canSave) return;
-
     const payload: RouteItem = {
       id: editing ? editing.id : Date.now(),
       name: routeName.trim(),
       region: region.trim(),
       status: editing?.status ?? "Active",
-      rider: rider.trim() || "Unassigned",
+      rider: rider.trim() || t("routes.unassigned"),
       stops: stops.map(s => s.trim()).filter(Boolean),
-      duration: editing?.duration ?? "3 hours",
-      lastUpdate: "just now",
+      duration: editing?.duration ?? t("routes.durationDefault"),
+      lastUpdate: t("routes.lastUpdate.justNow"),
     };
-
     setRoutes(list => editing ? list.map(r => r.id === editing.id ? payload : r) : [payload, ...list]);
     setOpen(false);
     resetForm();
@@ -118,33 +118,34 @@ export default function RoutesManagement() {
 
   return (
     <ScrollView contentContainerStyle={styles.page}>
+      <LanguageSwitcher />
       {/* Header */}
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.h1}>Routes Management</Text>
-          <Text style={styles.subtle}>Manage food cart routes and stops</Text>
+          <Text style={styles.h1}>{t("routes.header.title")}</Text>
+          <Text style={styles.subtle}>{t("routes.header.subtitle")}</Text>
         </View>
         <Pressable style={styles.btnSolid} onPress={startCreate}>
           <Feather name="plus" size={16} color="#fff" />
-          <Text style={styles.btnSolidText}>  Add Route</Text>
+          <Text style={styles.btnSolidText}>  {t("routes.buttons.addRoute")}</Text>
         </Pressable>
       </View>
 
       {/* Overview "table" */}
       <View style={styles.card}>
         <View style={[styles.rowBetween, { marginBottom: 8 }]}>
-          <Text style={styles.sectionTitle}>Routes Overview</Text>
-          <Text style={styles.subtleSmall}>All configured routes and their details</Text>
+          <Text style={styles.sectionTitle}>{t("routes.overview.title")}</Text>
+          <Text style={styles.subtleSmall}>{t("routes.overview.subtitle")}</Text>
         </View>
 
         <View style={styles.listWrap}>
           {/* Header */}
           <View style={[styles.tableRow, styles.tableHead]}>
-            <Text style={[styles.th, { flex: 1.8 }]}>Route Name</Text>
-            <Text style={[styles.th, { flex: 1 }]}>Region</Text>
-            <Text style={[styles.th, { flex: 0.9 }]}>Stops</Text>
-            <Text style={[styles.th, { flex: 1 }]}>Status</Text>
-            <Text style={[styles.th, { flex: 1, textAlign: "right" }]}>Actions</Text>
+            <Text style={[styles.th, { flex: 1.8 }]}>{t("routes.table.routeName")}</Text>
+            <Text style={[styles.th, { flex: 1 }]}>{t("routes.table.region")}</Text>
+            <Text style={[styles.th, { flex: 0.9 }]}>{t("routes.table.stops")}</Text>
+            <Text style={[styles.th, { flex: 1 }]}>{t("routes.table.status")}</Text>
+            <Text style={[styles.th, { flex: 1, textAlign: "right" }]}>{t("routes.table.actions")}</Text>
           </View>
 
           {/* Body */}
@@ -152,13 +153,16 @@ export default function RoutesManagement() {
             <View key={r.id} style={[styles.tableRow, i < routes.length - 1 ? styles.tableDivider : null]}>
               <Text style={[styles.td, { flex: 1.8, fontWeight: "700" }]}>{r.name}</Text>
               <Text style={[styles.td, { flex: 1 }]}>{r.region}</Text>
-              <Text style={[styles.td, { flex: 0.9 }]}>{r.stops.length} stops</Text>
+              <Text style={[styles.td, { flex: 0.9 }]}>{r.stops.length} {t("routes.labels.stops")}</Text>
               <View style={[styles.tdContainer, { flex: 1 }]}>
-                <Badge text={r.status} tone={r.status === "Active" ? "green" : "gray"} />
+                <Badge
+                  text={t(`routes.status.${r.status}`)}
+                  tone={r.status === "Active" ? "green" : "gray"}
+                />
               </View>
               <View style={[styles.tdContainer, { flex: 1, alignItems: "flex-end" }]}>
                 <Pressable style={styles.btnOutlineSm} onPress={() => startEdit(r)}>
-                  <Text>Edit</Text>
+                  <Text>{t("routes.actions.edit")}</Text>
                 </Pressable>
               </View>
             </View>
@@ -179,9 +183,12 @@ export default function RoutesManagement() {
                 </View>
               </View>
               <View style={[styles.row, { gap: 8, alignItems: "center" }]}>
-                <Badge text={route.status} tone={route.status === "Active" ? "green" : "gray"} />
+                <Badge
+                  text={t(`routes.status.${route.status}`)}
+                  tone={route.status === "Active" ? "green" : "gray"}
+                />
                 <Pressable style={styles.btnOutlineSm} onPress={() => startEdit(route)}>
-                  <Text>Edit</Text>
+                  <Text>{t("routes.actions.edit")}</Text>
                 </Pressable>
               </View>
             </View>
@@ -190,7 +197,7 @@ export default function RoutesManagement() {
               <View>
                 <View style={[styles.row, { gap: 6, alignItems: "center", marginBottom: 6 }]}>
                   <Feather name="map-pin" size={14} />
-                  <Text style={{ fontWeight: "700" }}>Route Stops</Text>
+                  <Text style={{ fontWeight: "700" }}>{t("routes.labels.routeStops")}</Text>
                 </View>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                   {route.stops.map((stop, idx) => (
@@ -203,8 +210,8 @@ export default function RoutesManagement() {
               </View>
 
               <View style={styles.rowBetween}>
-                <Text style={styles.subtleSmall}>Last updated: {route.lastUpdate}</Text>
-                <Text style={styles.subtleSmall}>{route.stops.length} stops total</Text>
+                <Text style={styles.subtleSmall}>{t("routes.lastUpdate.prefix")} {route.lastUpdate}</Text>
+                <Text style={styles.subtleSmall}>{route.stops.length} {t("routes.labels.stopsTotal")}</Text>
               </View>
             </View>
           </View>
@@ -219,11 +226,11 @@ export default function RoutesManagement() {
               <View style={[styles.row, { alignItems: "center", gap: 8 }]}>
                 <Feather name="map" size={18} />
                 <Text style={{ fontSize: 18, fontWeight: "800" }}>
-                  {editing ? "Edit Route" : "Create New Route"}
+                  {editing ? t("routes.modal.titleEdit") : t("routes.modal.titleCreate")}
                 </Text>
               </View>
               <Text style={styles.subtle}>
-                Add a new route with multiple stops using manual entry or map.
+                {t("routes.modal.subtitle")}
               </Text>
             </View>
 
@@ -231,33 +238,33 @@ export default function RoutesManagement() {
               {/* Top row */}
               <View style={{ flexDirection: "row", gap: 12 }}>
                 <View style={[styles.field, { flex: 1 }]}>
-                  <Text style={styles.label}>Route Name</Text>
+                  <Text style={styles.label}>{t("routes.fields.routeName")}</Text>
                   <TextInput
                     style={styles.input}
                     value={routeName}
                     onChangeText={setRouteName}
-                    placeholder="Enter route name"
+                    placeholder={t("routes.placeholders.routeName") as string}
                   />
                 </View>
                 <View style={[styles.field, { flex: 1 }]}>
-                  <Text style={styles.label}>Assigned Region</Text>
+                  <Text style={styles.label}>{t("routes.fields.region")}</Text>
                   <TextInput
                     style={styles.input}
                     value={region}
                     onChangeText={setRegion}
-                    placeholder="Enter region name"
+                    placeholder={t("routes.placeholders.region") as string}
                   />
                 </View>
               </View>
 
               <View style={{ flexDirection: "row", gap: 12 }}>
                 <View style={[styles.field, { flex: 1 }]}>
-                  <Text style={styles.label}>Assign Rider (optional)</Text>
+                  <Text style={styles.label}>{t("routes.fields.assignRider")}</Text>
                   <TextInput
                     style={styles.input}
                     value={rider}
                     onChangeText={setRider}
-                    placeholder="e.g., John Smith"
+                    placeholder={t("routes.placeholders.rider") as string}
                   />
                 </View>
               </View>
@@ -265,19 +272,19 @@ export default function RoutesManagement() {
               {/* Tabs */}
               <View style={styles.tabsBar}>
                 <Pressable onPress={() => setTab("manual")} style={[styles.tabBtn, tab === "manual" && styles.tabBtnActive]}>
-                  <Text style={[styles.tabText, tab === "manual" && styles.tabTextActive]}>Manual Entry</Text>
+                  <Text style={[styles.tabText, tab === "manual" && styles.tabTextActive]}>{t("routes.tabs.manual")}</Text>
                 </Pressable>
                 <Pressable onPress={() => setTab("map")} style={[styles.tabBtn, tab === "map" && styles.tabBtnActive]}>
-                  <Text style={[styles.tabText, tab === "map" && styles.tabTextActive]}>Interactive Map</Text>
+                  <Text style={[styles.tabText, tab === "map" && styles.tabTextActive]}>{t("routes.tabs.map")}</Text>
                 </Pressable>
               </View>
 
               {tab === "manual" ? (
                 <View style={{ gap: 10 }}>
                   <View style={styles.rowBetween}>
-                    <Text style={styles.label}>Route Stops</Text>
+                    <Text style={styles.label}>{t("routes.fields.routeStops")}</Text>
                     <Pressable style={styles.btnOutlineSm} onPress={addStop}>
-                      <Feather name="plus" size={14} /><Text>  Add</Text>
+                      <Feather name="plus" size={14} /><Text>  {t("routes.actions.add")}</Text>
                     </Pressable>
                   </View>
 
@@ -285,13 +292,13 @@ export default function RoutesManagement() {
                     <View key={idx} style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
                       <TextInput
                         style={[styles.input, { flex: 1 }]}
-                        placeholder={`Stop ${idx + 1}`}
+                        placeholder={`${t("routes.placeholders.stop")} ${idx + 1}`}
                         value={s}
                         onChangeText={(v) => changeStop(idx, v)}
                       />
                       {stops.length > 1 && (
                         <Pressable style={styles.btnOutlineSm} onPress={() => removeStop(idx)}>
-                          <Feather name="x" size={14} /><Text>  Remove</Text>
+                          <Feather name="x" size={14} /><Text>  {t("routes.actions.remove")}</Text>
                         </Pressable>
                       )}
                     </View>
@@ -299,10 +306,10 @@ export default function RoutesManagement() {
                 </View>
               ) : (
                 <View style={{ gap: 8 }}>
-                  <Text style={styles.label}>Map (placeholder)</Text>
+                  <Text style={styles.label}>{t("routes.fields.mapLabel")}</Text>
                   <View style={styles.mapStub}>
                     <Text style={styles.subtleSmall}>
-                      Drop a real map here later (e.g., react-native-maps). For now, use Manual Entry to add stops.
+                      {t("routes.map.placeholder")}
                     </Text>
                   </View>
                 </View>
@@ -311,10 +318,12 @@ export default function RoutesManagement() {
               {/* Actions */}
               <View style={[styles.row, { justifyContent: "flex-end", gap: 8, paddingTop: 8 }]}>
                 <Pressable style={styles.btnOutline} onPress={() => { setOpen(false); resetForm(); }}>
-                  <Text>Cancel</Text>
+                  <Text>{t("routes.actions.cancel")}</Text>
                 </Pressable>
                 <Pressable style={[styles.btnSolid, !canSave && { opacity: 0.5 }]} disabled={!canSave} onPress={save}>
-                  <Text style={styles.btnSolidText}>{editing ? "Save Route" : "Create Route"}</Text>
+                  <Text style={styles.btnSolidText}>
+                    {editing ? t("routes.actions.saveRoute") : t("routes.actions.createRoute")}
+                  </Text>
                 </Pressable>
               </View>
             </ScrollView>
@@ -328,10 +337,10 @@ export default function RoutesManagement() {
 /** ---------- Small UI bits ---------- */
 function Badge({ text, tone }: { text: string; tone: "green" | "gray" }) {
   const c = tone === "green" ? "#10b981" : "#9ca3af";
-  const t = tone === "green" ? "#065f46" : "#374151";
+  const tC = tone === "green" ? "#065f46" : "#374151";
   return (
     <View style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, backgroundColor: `${c}22`, borderWidth: 1, borderColor: `${c}55` }}>
-      <Text style={{ color: t, fontWeight: "700", fontSize: 12 }}>{text}</Text>
+      <Text style={{ color: tC, fontWeight: "700", fontSize: 12 }}>{text}</Text>
     </View>
   );
 }
@@ -393,14 +402,5 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.35)", justifyContent: "center", padding: 16 },
   mapStub: { borderWidth: 1, borderColor: "#e5e7eb", borderRadius: 12, padding: 16, backgroundColor: "#f9fafb" },
 
-
-  tdContainer: {
-    flex: 1,
-    // add any other styles you need for the container
-  },
-
-
-
-
-
+  tdContainer: { flex: 1 },
 });

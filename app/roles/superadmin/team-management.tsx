@@ -13,6 +13,8 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '@/lib/api';
+import { useTranslation } from 'react-i18next'; // ✅ i18n
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 /* ===== Seed data (kept, unchanged) ===== */
 type Person = { id: number; name: string; available: boolean };
@@ -68,7 +70,7 @@ const initialTeams: Team[] = [
   },
 ];
 
-/* ===== New API types & helpers (added) ===== */
+/* ===== New API types & helpers (kept) ===== */
 type Member = { id: string; name: string; email?: string };
 
 type ApiTeam = {
@@ -87,6 +89,8 @@ const idsToNames = (ids: string[], pool: Member[]) =>
 
 /* ================== Screen ================== */
 export default function TeamManagement() {
+  const { t } = useTranslation(); // ✅ i18n
+
   // keep your original local teams (not used now)
   const [_legacyTeams] = useState<Team[]>(initialTeams);
 
@@ -113,10 +117,7 @@ export default function TeamManagement() {
 
   const canSubmit =
     teamName.trim().length > 0 &&
-    selSupIds.length +
-      selRidIds.length +
-      selCookIds.length +
-      selRefillIds.length >
+    selSupIds.length + selRidIds.length + selCookIds.length + selRefillIds.length >
       0;
 
   const resetForm = () => {
@@ -128,11 +129,7 @@ export default function TeamManagement() {
     setEditingTeam(null);
   };
 
-  const toggle = (
-    list: string[],
-    id: string,
-    setter: (v: string[]) => void
-  ) => {
+  const toggle = (list: string[], id: string, setter: (v: string[]) => void) => {
     setter(list.includes(id) ? list.filter((n) => n !== id) : [...list, id]);
   };
 
@@ -166,7 +163,7 @@ export default function TeamManagement() {
           cooks: selCookIds,
           refills: selRefillIds,
         });
-        Alert.alert('Success', 'Team updated.');
+        Alert.alert(t('teams.alerts.success.title'), t('teams.alerts.success.updated'));
       } else {
         await api.post(`/api/admin/teams`, {
           name: teamName.trim(),
@@ -175,13 +172,13 @@ export default function TeamManagement() {
           cooks: selCookIds,
           refills: selRefillIds,
         });
-        Alert.alert('Success', 'Team created.');
+        Alert.alert(t('teams.alerts.success.title'), t('teams.alerts.success.created'));
       }
       await loadTeams();
       setOpen(false);
       resetForm();
     } catch (e: any) {
-      Alert.alert('Failed', e?.message || 'Could not save team.');
+      Alert.alert(t('teams.alerts.failed.title'), e?.message || t('teams.alerts.failed.saveTeam'));
     }
   };
 
@@ -193,26 +190,23 @@ export default function TeamManagement() {
       setTeams(res.items || []);
     } catch (e) {
       console.error('loadTeams error', e);
-      Alert.alert('Error', 'Could not load teams.');
+      Alert.alert(t('teams.alerts.error.title'), t('teams.alerts.error.loadTeams'));
     } finally {
       setLoading(false);
     }
   }
 
   // Accepts a variety of backend shapes and normalizes to {id, name, email}
-  function normalizeUsers(
-    payload: any
-  ): { id: string; name: string; email?: string }[] {
+  function normalizeUsers(payload: any): { id: string; name: string; email?: string }[] {
     const arr =
-      (payload && Array.isArray(payload.users) && payload.users) || // { users: [...] }
-      (Array.isArray(payload) && payload) || // [...] directly
-      (payload && Array.isArray(payload.items) && payload.items) || // { items: [...] }
+      (payload && Array.isArray(payload.users) && payload.users) ||
+      (Array.isArray(payload) && payload) ||
+      (payload && Array.isArray(payload.items) && payload.items) ||
       [];
 
     return arr
       .map((u: any) => ({
         id: String(u.id ?? u._id ?? u.userId ?? u.uuid ?? ''),
-        // prefer real name; fall back to handle/email if needed
         name: String(
           u.name ?? u.fullName ?? u.displayName ?? u.handle ?? u.email ?? ''
         ).trim(),
@@ -261,7 +255,7 @@ export default function TeamManagement() {
         setRefillOptions(normalized.filter((u: any) => u.role === 'refill'));
       } catch (e2: any) {
         console.error('loadOptions fallback error', e2);
-        Alert.alert('Error', 'Could not load user lists.');
+        Alert.alert(t('teams.alerts.error.title'), t('teams.alerts.error.loadUsers'));
       }
     }
   }
@@ -274,13 +268,12 @@ export default function TeamManagement() {
 
   return (
     <ScrollView contentContainerStyle={styles.page}>
+      <LanguageSwitcher />
       {/* Header */}
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.h1}>Team Management</Text>
-          <Text style={styles.subtle}>
-            Create and manage teams with supervisors
-          </Text>
+          <Text style={styles.h1}>{t('teams.header.title')}</Text>
+          <Text style={styles.subtle}>{t('teams.header.subtitle')}</Text>
         </View>
 
         {/* Yellow gradient Create Team button */}
@@ -290,16 +283,9 @@ export default function TeamManagement() {
           end={{ x: 1, y: 1 }}
           style={styles.btnGradient}
         >
-          <Pressable
-            style={styles.btnGradientInner}
-            onPress={openCreate}
-          >
-            <Feather
-              name='plus'
-              color='#ffffff'
-              size={16}
-            />
-            <Text style={styles.btnGradientText}> Create Team</Text>
+          <Pressable style={styles.btnGradientInner} onPress={openCreate}>
+            <Feather name='plus' color='#ffffff' size={16} />
+            <Text style={styles.btnGradientText}> {t('teams.buttons.createTeam')}</Text>
           </Pressable>
         </LinearGradient>
       </View>
@@ -307,91 +293,54 @@ export default function TeamManagement() {
       {/* Teams list */}
       <View style={{ gap: 12 }}>
         {loading ? (
-          <View
-            style={[styles.card, { alignItems: 'center', paddingVertical: 18 }]}
-          >
+          <View style={[styles.card, { alignItems: 'center', paddingVertical: 18 }]}>
             <ActivityIndicator />
           </View>
         ) : teams.length === 0 ? (
           <View style={styles.card}>
-            <Text style={styles.subtle}>
-              No teams yet. Create your first team.
-            </Text>
+            <Text style={styles.subtle}>{t('teams.empty.noTeams')}</Text>
           </View>
         ) : (
           teams.map((team) => (
-            <View
-              key={team.id}
-              style={styles.card}
-            >
+            <View key={team.id} style={styles.card}>
               <View style={[styles.rowBetween, { marginBottom: 6 }]}>
                 <View>
                   <View style={[styles.row, { alignItems: 'center', gap: 8 }]}>
-                    <Feather
-                      name='users'
-                      size={18}
-                    />
+                    <Feather name='users' size={18} />
                     <Text style={{ fontSize: 18, fontWeight: '800' }}>
                       {team.name}
                     </Text>
                   </View>
                   <Text style={[styles.subtleSmall, { marginTop: 4 }]}>
-                    Created: {team.created} · {team.routes} active routes
+                    {t('teams.card.createdPrefix')} {team.created} · {team.routes} {t('teams.card.activeRoutesSuffix')}
                   </Text>
                 </View>
 
                 {/* EDIT TEAM */}
-                <Pressable
-                  style={styles.btnOutline}
-                  onPress={() => openEdit(team)}
-                >
-                  <Text>Edit Team</Text>
+                <Pressable style={styles.btnOutline} onPress={() => openEdit(team)}>
+                  <Text>{t('teams.actions.editTeam')}</Text>
                 </Pressable>
               </View>
 
               <View style={{ gap: 12 }}>
                 {team.supervisors.length > 0 && (
-                  <Section
-                    title='Supervisors'
-                    icon='user'
-                  >
-                    <ChipRow
-                      data={team.supervisors.map((m) => m.name)}
-                      color='#1d4ed8'
-                    />
+                  <Section title={t('teams.sections.supervisors')} icon='user'>
+                    <ChipRow data={team.supervisors.map((m) => m.name)} color='#1d4ed8' />
                   </Section>
                 )}
                 {team.riders.length > 0 && (
-                  <Section
-                    title='Riders'
-                    icon='truck'
-                  >
-                    <ChipRow
-                      data={team.riders.map((m) => m.name)}
-                      color='#047857'
-                    />
+                  <Section title={t('teams.sections.riders')} icon='truck'>
+                    <ChipRow data={team.riders.map((m) => m.name)} color='#047857' />
                   </Section>
                 )}
                 {team.cooks.length > 0 && (
-                  <Section
-                    title='Cooks'
-                    icon='coffee'
-                  >
-                    <ChipRow
-                      data={team.cooks.map((m) => m.name)}
-                      color='#c2410c'
-                    />
+                  <Section title={t('teams.sections.cooks')} icon='coffee'>
+                    <ChipRow data={team.cooks.map((m) => m.name)} color='#c2410c' />
                   </Section>
                 )}
                 {team.refills && team.refills.length > 0 && (
-                  <Section
-                    title='Refill Coordinators'
-                    icon='refresh-ccw'
-                  >
-                    <ChipRow
-                      data={team.refills.map((m) => m.name)}
-                      color='#a21caf'
-                    />
+                  <Section title={t('teams.sections.refills')} icon='refresh-ccw'>
+                    <ChipRow data={team.refills.map((m) => m.name)} color='#a21caf' />
                   </Section>
                 )}
               </View>
@@ -401,37 +350,25 @@ export default function TeamManagement() {
       </View>
 
       {/* Create/Edit Team Modal */}
-      <Modal
-        transparent
-        visible={open}
-        animationType='slide'
-        onRequestClose={() => setOpen(false)}
-      >
+      <Modal transparent visible={open} animationType='slide' onRequestClose={() => setOpen(false)}>
         <View style={styles.backdrop}>
-          <View
-            style={[
-              styles.card,
-              { padding: 16, gap: 12, maxHeight: '90%', width: '100%' },
-            ]}
-          >
+          <View style={[styles.card, { padding: 16, gap: 12, maxHeight: '90%', width: '100%' }]}>
             <View>
               <Text style={{ fontSize: 18, fontWeight: '800' }}>
-                {editingTeam ? 'Edit Team' : 'Create New Team'}
+                {editingTeam ? t('teams.modal.titleEdit') : t('teams.modal.titleCreate')}
               </Text>
               <Text style={styles.subtle}>
-                {editingTeam
-                  ? 'Update team name and membership'
-                  : 'Create a team and assign supervisors to manage operations'}
+                {editingTeam ? t('teams.modal.subtitleEdit') : t('teams.modal.subtitleCreate')}
               </Text>
             </View>
 
             <ScrollView contentContainerStyle={{ gap: 12 }}>
               {/* Team Name */}
               <View style={styles.field}>
-                <Text style={styles.label}>Team Name</Text>
+                <Text style={styles.label}>{t('teams.fields.teamName')}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder='Enter team name'
+                  placeholder={t('teams.placeholders.teamName') as string}
                   value={teamName}
                   onChangeText={setTeamName}
                 />
@@ -440,7 +377,7 @@ export default function TeamManagement() {
               {/* Supervisors */}
               <PickerGroup
                 icon='user'
-                title='Select Supervisors'
+                title={t('teams.picker.selectSupervisors')}
                 people={supOptions}
                 selected={selSupIds}
                 onToggle={(id) => toggle(selSupIds, id, setSelSupIds)}
@@ -449,7 +386,7 @@ export default function TeamManagement() {
               {/* Riders */}
               <PickerGroup
                 icon='truck'
-                title='Select Riders'
+                title={t('teams.picker.selectRiders')}
                 people={riderOptions}
                 selected={selRidIds}
                 onToggle={(id) => toggle(selRidIds, id, setSelRidIds)}
@@ -458,95 +395,55 @@ export default function TeamManagement() {
               {/* Cooks */}
               <PickerGroup
                 icon='coffee'
-                title='Select Cooks'
+                title={t('teams.picker.selectCooks')}
                 people={cookOptions}
                 selected={selCookIds}
                 onToggle={(id) => toggle(selCookIds, id, setSelCookIds)}
               />
+
+              {/* Refill Coordinators */}
               <PickerGroup
                 icon='refresh-ccw'
-                title='Select Refill Coordinators'
+                title={t('teams.picker.selectRefills')}
                 people={refillOptions}
                 selected={selRefillIds}
                 onToggle={(id) => toggle(selRefillIds, id, setSelRefillIds)}
               />
 
               {/* Selected preview */}
-              {selSupIds.length || selRidIds.length || selCookIds.length ? (
-                <View
-                  style={{
-                    paddingTop: 10,
-                    borderTopWidth: 1,
-                    borderColor: '#e5e7eb',
-                    gap: 8,
-                  }}
-                >
-                  <Text style={styles.label}>Selected Team Members</Text>
+              {selSupIds.length || selRidIds.length || selCookIds.length || selRefillIds.length ? (
+                <View style={{ paddingTop: 10, borderTopWidth: 1, borderColor: '#e5e7eb', gap: 8 }}>
+                  <Text style={styles.label}>{t('teams.selected.previewTitle')}</Text>
 
                   {selSupIds.length > 0 && (
                     <View>
-                      <Badge
-                        text='Supervisors'
-                        outline
-                      />
-                      <ChipRow
-                        data={idsToNames(selSupIds, supOptions)}
-                        color='#1d4ed8'
-                      />
+                      <Badge text={t('teams.sections.supervisors')} outline />
+                      <ChipRow data={idsToNames(selSupIds, supOptions)} color='#1d4ed8' />
                     </View>
                   )}
                   {selRidIds.length > 0 && (
                     <View>
-                      <Badge
-                        text='Riders'
-                        outline
-                      />
-                      <ChipRow
-                        data={idsToNames(selRidIds, riderOptions)}
-                        color='#047857'
-                      />
+                      <Badge text={t('teams.sections.riders')} outline />
+                      <ChipRow data={idsToNames(selRidIds, riderOptions)} color='#047857' />
                     </View>
                   )}
                   {selCookIds.length > 0 && (
                     <View>
-                      <Badge
-                        text='Cooks'
-                        outline
-                      />
-                      <ChipRow
-                        data={idsToNames(selCookIds, cookOptions)}
-                        color='#c2410c'
-                      />
+                      <Badge text={t('teams.sections.cooks')} outline />
+                      <ChipRow data={idsToNames(selCookIds, cookOptions)} color='#c2410c' />
                     </View>
                   )}
                   {selRefillIds.length > 0 && (
                     <View>
-                      <Badge
-                        text='Refill Coordinators'
-                        outline
-                      />
-                      <ChipRow
-                        data={idsToNames(selRefillIds, refillOptions)}
-                        color='#a21caf'
-                      />
+                      <Badge text={t('teams.sections.refills')} outline />
+                      <ChipRow data={idsToNames(selRefillIds, refillOptions)} color='#a21caf' />
                     </View>
                   )}
                 </View>
               ) : null}
 
               {/* Actions */}
-              <View
-                style={[
-                  styles.row,
-                  {
-                    justifyContent: 'flex-end',
-                    gap: 8,
-                    paddingTop: 10,
-                    borderTopWidth: 1,
-                    borderColor: '#e5e7eb',
-                  },
-                ]}
-              >
+              <View style={[styles.row, { justifyContent: 'flex-end', gap: 8, paddingTop: 10, borderTopWidth: 1, borderColor: '#e5e7eb' }]}>
                 <Pressable
                   style={styles.btnOutline}
                   onPress={() => {
@@ -554,7 +451,7 @@ export default function TeamManagement() {
                     resetForm();
                   }}
                 >
-                  <Text>Cancel</Text>
+                  <Text>{t('teams.actions.cancel')}</Text>
                 </Pressable>
 
                 <Pressable
@@ -562,12 +459,8 @@ export default function TeamManagement() {
                   onPress={submit}
                   style={[styles.btnSolid, !canSubmit && { opacity: 0.5 }]}
                 >
-                  <Feather
-                    name='check'
-                    color='#fff'
-                    size={16}
-                  />
-                  <Text style={styles.btnSolidText}> Save</Text>
+                  <Feather name='check' color='#fff' size={16} />
+                  <Text style={styles.btnSolidText}> {t('teams.actions.save')}</Text>
                 </Pressable>
               </View>
             </ScrollView>
@@ -578,7 +471,7 @@ export default function TeamManagement() {
   );
 }
 
-/* ---------- small UI helpers you already used ---------- */
+/* ---------- small UI helpers (kept) ---------- */
 function Section({
   title,
   icon,
@@ -590,13 +483,8 @@ function Section({
 }) {
   return (
     <View>
-      <View
-        style={[styles.row, { alignItems: 'center', gap: 8, marginBottom: 6 }]}
-      >
-        <Feather
-          name={icon}
-          size={16}
-        />
+      <View style={[styles.row, { alignItems: 'center', gap: 8, marginBottom: 6 }]}>
+        <Feather name={icon} size={16} />
         <Text style={{ fontWeight: '700' }}>{title}</Text>
       </View>
       {children}
@@ -645,7 +533,7 @@ function Badge({ text, outline = false }: { text: string; outline?: boolean }) {
   );
 }
 
-/* ---------- PickerGroup updated to use Member + IDs ---------- */
+/* ---------- PickerGroup (kept) ---------- */
 function PickerGroup({
   icon,
   title,
@@ -659,44 +547,30 @@ function PickerGroup({
   selected: string[];
   onToggle: (id: string) => void;
 }) {
+  const { t } = useTranslation(); // for "No options"
   return (
     <View>
-      <View
-        style={[styles.row, { alignItems: 'center', gap: 8, marginBottom: 6 }]}
-      >
-        <Feather
-          name={icon}
-          size={16}
-        />
+      <View style={[styles.row, { alignItems: 'center', gap: 8, marginBottom: 6 }]}>
+        <Feather name={icon} size={16} />
         <Text style={[styles.label, { marginBottom: 0 }]}>{title}</Text>
       </View>
 
       <View style={[styles.listWrap]}>
         {people.length === 0 ? (
-          <Text style={{ padding: 12, color: '#6b7280' }}>No options</Text>
+          <Text style={{ padding: 12, color: '#6b7280' }}>{t('teams.picker.noOptions')}</Text>
         ) : (
           people.map((p, idx) => {
             const checked = selected.includes(p.id);
             return (
               <View key={p.id + '_' + idx}>
-                <Pressable
-                  onPress={() => onToggle(p.id)}
-                  style={[styles.listRow, { justifyContent: 'space-between' }]}
-                >
+                <Pressable onPress={() => onToggle(p.id)} style={[styles.listRow, { justifyContent: 'space-between' }]}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Feather
-                      name={checked ? 'check-square' : 'square'}
-                      size={18}
-                    />
+                    <Feather name={checked ? 'check-square' : 'square'} size={18} />
                     <Text style={{ marginLeft: 8 }}>{p.name}</Text>
                   </View>
-                  {p.email ? (
-                    <Text style={styles.subtleSmall}>{p.email}</Text>
-                  ) : null}
+                  {p.email ? <Text style={styles.subtleSmall}>{p.email}</Text> : null}
                 </Pressable>
-                {idx < people.length - 1 ? (
-                  <View style={styles.divider} />
-                ) : null}
+                {idx < people.length - 1 ? <View style={styles.divider} /> : null}
               </View>
             );
           })
@@ -706,7 +580,7 @@ function PickerGroup({
   );
 }
 
-/* ---------- styles (kept + a few additions) ---------- */
+/* ---------- styles (kept) ---------- */
 const styles = StyleSheet.create({
   page: { padding: 16, gap: 16, paddingBottom: 32, backgroundColor: '#f9fafb' },
 
@@ -723,11 +597,7 @@ const styles = StyleSheet.create({
   subtleSmall: { color: '#6b7280', fontSize: 12 },
 
   row: { flexDirection: 'row' },
-  rowBetween: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
 
   card: {
     flex: 1,
@@ -764,10 +634,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
 
-  /* NEW: yellow gradient button wrapper + inner pressable */
-  btnGradient: {
-    borderRadius: 12,
-  },
+  /* yellow gradient button wrapper + inner pressable */
+  btnGradient: { borderRadius: 12 },
   btnGradientInner: {
     flexDirection: 'row',
     alignItems: 'center',

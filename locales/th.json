@@ -251,6 +251,168 @@
       "req": { "Pending": "รอดำเนินการ", "Approved": "อนุมัติ", "Rejected": "ปฏิเสธ" }
     },
     "actions": { "approve": "อนุมัติ", "decline": "ปฏิเสธ" }
+  },
+    "routes_management": {
+    "title": "การจัดการเส้นทาง",
+    "subtitle": "จัดการเส้นทางและจุดแวะของรถเข็นอาหาร",
+    "add_route": "เพิ่มเส้นทาง",
+    "overview_title": "ภาพรวมเส้นทาง",
+    "overview_subtitle": "แสดงรายละเอียดเส้นทางทั้งหมด",
+    "route_name": "ชื่อเส้นทาง",
+    "region": "ภูมิภาค",
+    "stops": "จุดแวะ",
+    "status": "สถานะ",
+    "actions": "การดำเนินการ",
+    "edit": "แก้ไข",
+    "route_stops": "จุดแวะของเส้นทาง",
+    "last_updated": "อัปเดตล่าสุด",
+    "stops_total": "จุดแวะทั้งหมด",
+    "create_route": "สร้างเส้นทางใหม่",
+    "edit_route": "แก้ไขเส้นทาง",
+    "dialog_subtitle": "เพิ่มเส้นทางใหม่พร้อมหลายจุดแวะโดยใช้การกรอกเองหรือแผนที่",
+    "assign_rider": "กำหนดผู้ขับ (ถ้ามี)",
+    "manual_entry": "กรอกเอง",
+    "interactive_map": "แผนที่โต้ตอบ",
+    "add_stop": "เพิ่ม",
+    "remove_stop": "ลบ",
+    "cancel": "ยกเลิก",
+    "save_route": "บันทึกเส้นทาง",
+    "create_new_route": "สร้างเส้นทาง",
+    "pattaya_map": "แผนที่โต้ตอบ (เมืองพัทยา)",
+    "pattaya_note": "แผนที่ตัวอย่างที่ศูนย์กลางเมืองพัทยา (ในเว็บจะเห็นเป็นแผนที่ฝัง, บน Android/iOS จะเป็นแผนที่แบบเนทีฟ)"
+  },
+   "routes": {
+    "header": {
+      "title": "จัดการเส้นทาง",
+      "subtitle": "จัดการเส้นทางและจุดจอดของรถเข็นอาหาร"
+    },
+    "buttons": {
+      "addRoute": "เพิ่มเส้นทาง"
+    },
+    "overview": {
+      "title": "ภาพรวมเส้นทาง",
+      "subtitle": "รายการเส้นทางที่กำหนดไว้และรายละเอียด"
+    },
+    "table": {
+      "routeName": "ชื่อเส้นทาง",
+      "region": "ภูมิภาค",
+      "stops": "จุดจอด",
+      "status": "สถานะ",
+      "actions": "การทำงาน"
+    },
+    "labels": {
+      "stops": "จุดจอด",
+      "routeStops": "จุดจอดของเส้นทาง",
+      "stopsTotal": "จุดจอดทั้งหมด"
+    },
+    "status": {
+      "Active": "กำลังใช้งาน",
+      "Inactive": "ปิดใช้งาน"
+    },
+    "actions": {
+      "edit": "แก้ไข",
+      "add": "เพิ่ม",
+      "remove": "ลบ",
+      "cancel": "ยกเลิก",
+      "saveRoute": "บันทึกเส้นทาง",
+      "createRoute": "สร้างเส้นทาง"
+    },
+    "modal": {
+      "titleEdit": "แก้ไขเส้นทาง",
+      "titleCreate": "สร้างเส้นทางใหม่",
+      "subtitle": "เพิ่มเส้นทางใหม่พร้อมหลายจุดจอดด้วยการกรอกเองหรือใช้แผนที่"
+    },
+    "fields": {
+      "routeName": "ชื่อเส้นทาง",
+      "region": "ภูมิภาคที่กำหนด",
+      "assignRider": "กำหนดไรเดอร์ (ถ้ามี)",
+      "routeStops": "จุดจอดของเส้นทาง",
+      "mapLabel": "แผนที่ (ตัวอย่าง)"
+    },
+    "tabs": {
+      "manual": "กรอกเอง",
+      "map": "แผนที่โต้ตอบ"
+    },
+    "placeholders": {
+      "routeName": "กรอกชื่อเส้นทาง",
+      "region": "กรอกชื่อภูมิภาค",
+      "rider": "เช่น John Smith",
+      "stop": "จุดจอด"
+    },
+    "map": {
+      "placeholder": "สามารถใส่แผนที่จริงภายหลัง (เช่น react-native-maps) ตอนนี้ให้ใช้การกรอกเองเพื่อเพิ่มจุดจอด"
+    },
+    "lastUpdate": {
+      "prefix": "อัปเดตล่าสุด:",
+      "justNow": "เมื่อสักครู่"
+    },
+    "unassigned": "ยังไม่กำหนด",
+    "durationDefault": "3 ชั่วโมง"
+  },
+  "teams": {
+    "header": {
+      "title": "จัดการทีม",
+      "subtitle": "สร้างและจัดการทีมพร้อมผู้ควบคุมงาน"
+    },
+    "buttons": {
+      "createTeam": "สร้างทีม"
+    },
+    "empty": {
+      "noTeams": "ยังไม่มีทีม สร้างทีมแรกของคุณเลย"
+    },
+    "card": {
+      "createdPrefix": "สร้างเมื่อ:",
+      "activeRoutesSuffix": "เส้นทางที่ใช้งาน"
+    },
+    "sections": {
+      "supervisors": "ผู้ควบคุมงาน",
+      "riders": "ไรเดอร์",
+      "cooks": "พ่อครัว",
+      "refills": "ผู้ประสานการเติมสินค้า"
+    },
+    "actions": {
+      "editTeam": "แก้ไขทีม",
+      "cancel": "ยกเลิก",
+      "save": "บันทึก"
+    },
+    "modal": {
+      "titleEdit": "แก้ไขทีม",
+      "titleCreate": "สร้างทีมใหม่",
+      "subtitleEdit": "อัปเดตชื่อทีมและสมาชิก",
+      "subtitleCreate": "สร้างทีมและกำหนดผู้ควบคุมงานเพื่อดูแลงาน"
+    },
+    "fields": {
+      "teamName": "ชื่อทีม"
+    },
+    "placeholders": {
+      "teamName": "กรอกชื่อทีม"
+    },
+    "picker": {
+      "selectSupervisors": "เลือกผู้ควบคุมงาน",
+      "selectRiders": "เลือกไรเดอร์",
+      "selectCooks": "เลือกพ่อครัว",
+      "selectRefills": "เลือกผู้ประสานการเติมสินค้า",
+      "noOptions": "ไม่มีตัวเลือก"
+    },
+    "selected": {
+      "previewTitle": "สมาชิกทีมที่เลือก"
+    },
+    "alerts": {
+      "success": {
+        "title": "สำเร็จ",
+        "updated": "อัปเดตทีมแล้ว",
+        "created": "สร้างทีมแล้ว"
+      },
+      "failed": {
+        "title": "ไม่สำเร็จ",
+        "saveTeam": "ไม่สามารถบันทึกทีมได้"
+      },
+      "error": {
+        "title": "เกิดข้อผิดพลาด",
+        "loadTeams": "ไม่สามารถโหลดทีมได้",
+        "loadUsers": "ไม่สามารถโหลดรายชื่อผู้ใช้ได้"
+      }
+    }
   }
   }
   

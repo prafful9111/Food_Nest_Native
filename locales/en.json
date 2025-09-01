@@ -251,6 +251,168 @@
       "req": { "Pending": "Pending", "Approved": "Approved", "Rejected": "Rejected" }
     },
     "actions": { "approve": "Approve", "decline": "Decline" }
+  },
+    "routes_management": {
+    "title": "Routes Management",
+    "subtitle": "Manage food cart routes and stops",
+    "add_route": "Add Route",
+    "overview_title": "Routes Overview",
+    "overview_subtitle": "All configured routes and their details",
+    "route_name": "Route Name",
+    "region": "Region",
+    "stops": "Stops",
+    "status": "Status",
+    "actions": "Actions",
+    "edit": "Edit",
+    "route_stops": "Route Stops",
+    "last_updated": "Last updated",
+    "stops_total": "stops total",
+    "create_route": "Create New Route",
+    "edit_route": "Edit Route",
+    "dialog_subtitle": "Add a new route with multiple stops using manual entry or map.",
+    "assign_rider": "Assign Rider (optional)",
+    "manual_entry": "Manual Entry",
+    "interactive_map": "Interactive Map",
+    "add_stop": "Add",
+    "remove_stop": "Remove",
+    "cancel": "Cancel",
+    "save_route": "Save Route",
+    "create_new_route": "Create Route",
+    "pattaya_map": "Interactive Map (Pattaya City)",
+    "pattaya_note": "Sample map centered on Pattaya City. (On web you see an embedded map; on Android/iOS you get a native map.)"
+  },
+    "routes": {
+    "header": {
+      "title": "Routes Management",
+      "subtitle": "Manage food cart routes and stops"
+    },
+    "buttons": {
+      "addRoute": "Add Route"
+    },
+    "overview": {
+      "title": "Routes Overview",
+      "subtitle": "All configured routes and their details"
+    },
+    "table": {
+      "routeName": "Route Name",
+      "region": "Region",
+      "stops": "Stops",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "labels": {
+      "stops": "stops",
+      "routeStops": "Route Stops",
+      "stopsTotal": "stops total"
+    },
+    "status": {
+      "Active": "Active",
+      "Inactive": "Inactive"
+    },
+    "actions": {
+      "edit": "Edit",
+      "add": "Add",
+      "remove": "Remove",
+      "cancel": "Cancel",
+      "saveRoute": "Save Route",
+      "createRoute": "Create Route"
+    },
+    "modal": {
+      "titleEdit": "Edit Route",
+      "titleCreate": "Create New Route",
+      "subtitle": "Add a new route with multiple stops using manual entry or map."
+    },
+    "fields": {
+      "routeName": "Route Name",
+      "region": "Assigned Region",
+      "assignRider": "Assign Rider (optional)",
+      "routeStops": "Route Stops",
+      "mapLabel": "Map (placeholder)"
+    },
+    "tabs": {
+      "manual": "Manual Entry",
+      "map": "Interactive Map"
+    },
+    "placeholders": {
+      "routeName": "Enter route name",
+      "region": "Enter region name",
+      "rider": "e.g., John Smith",
+      "stop": "Stop"
+    },
+    "map": {
+      "placeholder": "Drop a real map here later (e.g., react-native-maps). For now, use Manual Entry to add stops."
+    },
+    "lastUpdate": {
+      "prefix": "Last updated:",
+      "justNow": "just now"
+    },
+    "unassigned": "Unassigned",
+    "durationDefault": "3 hours"
+  },
+  "teams": {
+    "header": {
+      "title": "Team Management",
+      "subtitle": "Create and manage teams with supervisors"
+    },
+    "buttons": {
+      "createTeam": "Create Team"
+    },
+    "empty": {
+      "noTeams": "No teams yet. Create your first team."
+    },
+    "card": {
+      "createdPrefix": "Created:",
+      "activeRoutesSuffix": "active routes"
+    },
+    "sections": {
+      "supervisors": "Supervisors",
+      "riders": "Riders",
+      "cooks": "Cooks",
+      "refills": "Refill Coordinators"
+    },
+    "actions": {
+      "editTeam": "Edit Team",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "modal": {
+      "titleEdit": "Edit Team",
+      "titleCreate": "Create New Team",
+      "subtitleEdit": "Update team name and membership",
+      "subtitleCreate": "Create a team and assign supervisors to manage operations"
+    },
+    "fields": {
+      "teamName": "Team Name"
+    },
+    "placeholders": {
+      "teamName": "Enter team name"
+    },
+    "picker": {
+      "selectSupervisors": "Select Supervisors",
+      "selectRiders": "Select Riders",
+      "selectCooks": "Select Cooks",
+      "selectRefills": "Select Refill Coordinators",
+      "noOptions": "No options"
+    },
+    "selected": {
+      "previewTitle": "Selected Team Members"
+    },
+    "alerts": {
+      "success": {
+        "title": "Success",
+        "updated": "Team updated.",
+        "created": "Team created."
+      },
+      "failed": {
+        "title": "Failed",
+        "saveTeam": "Could not save team."
+      },
+      "error": {
+        "title": "Error",
+        "loadTeams": "Could not load teams.",
+        "loadUsers": "Could not load user lists."
+      }
+    }
   }
   }
   
