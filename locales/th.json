@@ -1,0 +1,58 @@
+{
+    "appName": "ฟู้ดเนสต์ เนทีฟ",
+    "common.ok": "ตกลง",
+    "common.cancel": "ยกเลิก",
+    "auth.login": "เข้าสู่ระบบ",
+    "auth.logout": "ออกจากระบบ",
+    "home.title": "ยินดีต้อนรับสู่ FoodNest",
+    "roles.superadmin": "ซูเปอร์แอดมิน",
+    "roles.rider": "ไรเดอร์",
+    "roles.cook": "พ่อครัว",
+    "roles.supervisor": "หัวหน้างาน",
+    "roles.refill": "ผู้ประสานงานเติมสินค้า",
+    "language.english": "English",
+    "language.thai": "ไทย",
+    "language.select": "ภาษา",
+    "brand.title": "Food-Nest",
+    "brand.tagline": "ถนนของคุณ รสชาติของคุณ",
+  
+    "placeholders.email": "อีเมล",
+    "placeholders.password": "รหัสผ่าน",
+    "placeholders.otp": "กรอกรหัส 6 หลัก",
+    "placeholders.newPassword": "รหัสผ่านใหม่",
+    "placeholders.confirmPassword": "ยืนยันรหัสผ่านใหม่",
+  
+    "links.forgotPassword": "ลืมรหัสผ่าน?",
+    "links.resendOtp": "ไม่ได้รับรหัส? ขอรหัสใหม่",
+    "links.backToLogin": "กลับไปเข้าสู่ระบบ",
+  
+    "buttons.login": "เข้าสู่ระบบ",
+    "buttons.getOtp": "ขอรหัส OTP",
+    "buttons.verifyOtp": "ยืนยันรหัส OTP",
+    "buttons.setNewPassword": "ตั้งรหัสผ่านใหม่",
+  
+    "forgot.info": "กรอกอีเมลและกด ขอรหัส OTP เราจะส่งรหัสไปที่อีเมลของคุณ",
+  
+    "alerts.missingInfo.title": "ข้อมูลไม่ครบ",
+    "alerts.missingInfo.msg": "กรอกอีเมลและรหัสผ่าน",
+    "alerts.loginFailed.title": "เข้าสู่ระบบล้มเหลว",
+    "alerts.emailRequired.title": "ต้องการอีเมล",
+    "alerts.emailRequired.msg": "กรุณากรอกอีเมลของคุณ",
+    "alerts.otpSent.title": "ส่งรหัสแล้ว",
+    "alerts.otpSent.msg": "เราได้ส่งรหัสไปยังอีเมลของคุณ",
+    "alerts.error.title": "ข้อผิดพลาด",
+    "alerts.invalidCode.title": "รหัสไม่ถูกต้อง",
+    "alerts.invalidCode.msg": "กรอกรหัสจากอีเมลของคุณ",
+    "alerts.invalidOrExpired.title": "รหัสผิดหรือหมดอายุ",
+    "alerts.weakPassword.title": "รหัสผ่านอ่อน",
+    "alerts.weakPassword.msg": "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร",
+    "alerts.mismatch.title": "รหัสผ่านไม่ตรงกัน",
+    "alerts.mismatch.msg": "รหัสผ่านใหม่และการยืนยันไม่ตรงกัน",
+    "alerts.success.title": "สำเร็จ",
+    "alerts.success.msg": "อัปเดตรหัสผ่านแล้ว กรุณาเข้าสู่ระบบ",
+    "alerts.couldNotReset.title": "ไม่สามารถตั้งค่าใหม่ได้",
+  
+    "errors.noToken": "เซิร์ฟเวอร์ไม่ส่งโทเค็นกลับมา",
+    "errors.generic": "เกิดข้อผิดพลาด"
+  }
+  

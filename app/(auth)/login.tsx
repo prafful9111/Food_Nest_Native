@@ -14,12 +14,14 @@ import { signInWithToken } from "@/lib/authStore";
 import { api } from "@/lib/api";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useTranslation } from "react-i18next"; // 👈 ADD
 
 type Mode = "login" | "forgot" | "otp" | "reset";
 
-export default function LoginScreen() {
+export default function Login() {
+  const { t } = useTranslation();         // 👈 ADD
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
 
@@ -40,68 +42,59 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      return Alert.alert("Missing info", "Enter email and password.");
+      return Alert.alert(t("alerts.missingInfo.title"), t("alerts.missingInfo.msg"));
     }
     setBusy(true);
     try {
-      // 1) Call backend
       const res = await api.post("/api/auth/login", {
         email: email.trim().toLowerCase(),
-        password
+        password,
       });
-  
-      // 2) Support both axios-like and fetch-like shapes
+
       const payload = (res && (res as any).data) ? (res as any).data : res;
-      const user    = payload?.user;
-      const jwt     = payload?.token || payload?.accessToken;
-  
-      if (!jwt) {
-        throw new Error("No token returned from server");
-      }
-  
-      // 3) Persist to AsyncStorage (keys used elsewhere)
+      const user = payload?.user;
+      const jwt = payload?.token || payload?.accessToken;
+
+      if (!jwt) throw new Error(t("errors.noToken"));
+
       await AsyncStorage.multiSet([
-        ["token", jwt],                                  // <— our fetch helpers read this
+        ["token", jwt],
         ["user", JSON.stringify(user || {})],
         ["role", String(user?.role || "")],
-        ["userId", String(user?._id || user?.id || "")]
+        ["userId", String(user?._id || user?.id || "")],
       ]);
-  
-      // 4) Keep your existing auth store update (if it expects token + user)
+
       await signInWithToken(user, jwt);
-  
-      // 5) Navigate (your app redirects by role on /index)
       router.replace("/");
     } catch (e: any) {
       const msg =
         e?.response?.data?.error ||
         e?.response?.data?.message ||
         e?.message ||
-        "Something went wrong";
-      Alert.alert("Login failed", String(msg));
+        t("errors.generic");
+      Alert.alert(t("alerts.loginFailed.title"), String(msg));
     } finally {
       setBusy(false);
     }
   };
-  
 
-  // --- Forgot password flow handlers ---
   const requestOtp = async () => {
-    if (!email) return Alert.alert("Email required", "Please enter your account email.");
+    if (!email) return Alert.alert(t("alerts.emailRequired.title"), t("alerts.emailRequired.msg"));
     setBusy(true);
     try {
       await api.post("/api/auth/forgot/request-otp", { email: email.trim().toLowerCase() });
-      Alert.alert("OTP sent", "We’ve sent a code to your email.");
+      Alert.alert(t("alerts.otpSent.title"), t("alerts.otpSent.msg"));
       setMode("otp");
     } catch (e: any) {
-      Alert.alert("Error", e?.message || "Could not request OTP.");
+      Alert.alert(t("alerts.error.title"), e?.message || t("errors.generic"));
     } finally {
       setBusy(false);
     }
   };
 
   const verifyOtp = async () => {
-    if (!otp || otp.trim().length < 4) return Alert.alert("Invalid code", "Enter the code from your email.");
+    if (!otp || otp.trim().length < 4)
+      return Alert.alert(t("alerts.invalidCode.title"), t("alerts.invalidCode.msg"));
     setBusy(true);
     try {
       await api.post("/api/auth/forgot/verify", {
@@ -110,7 +103,7 @@ export default function LoginScreen() {
       });
       setMode("reset");
     } catch (e: any) {
-      Alert.alert("Invalid or expired", e?.message || "Please check the code and try again.");
+      Alert.alert(t("alerts.invalidOrExpired.title"), e?.message || t("errors.generic"));
     } finally {
       setBusy(false);
     }
@@ -118,10 +111,10 @@ export default function LoginScreen() {
 
   const resetPassword = async () => {
     if (!newPassword || newPassword.length < 6) {
-      return Alert.alert("Weak password", "Password must be at least 6 characters.");
+      return Alert.alert(t("alerts.weakPassword.title"), t("alerts.weakPassword.msg"));
     }
     if (newPassword !== confirmPassword) {
-      return Alert.alert("Mismatch", "New password and confirmation don’t match.");
+      return Alert.alert(t("alerts.mismatch.title"), t("alerts.mismatch.msg"));
     }
     setBusy(true);
     try {
@@ -130,21 +123,19 @@ export default function LoginScreen() {
         code: otp.trim(),
         newPassword,
       });
-      Alert.alert("Success", "Password updated. Please log in.");
-      // clean state & go back to login
+      Alert.alert(t("alerts.success.title"), t("alerts.success.msg"));
       setPassword("");
       setOtp("");
       setNewPassword("");
       setConfirmPassword("");
       setMode("login");
     } catch (e: any) {
-      Alert.alert("Could not reset", e?.message || "Please request a new code and try again.");
+      Alert.alert(t("alerts.couldNotReset.title"), e?.message || t("errors.generic"));
     } finally {
       setBusy(false);
     }
   };
 
-  // Common yellow gradient button
   const YellowButton = ({
     onPress,
     children,
@@ -170,19 +161,21 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
+      <LanguageSwitcher />
+
       {/* Branding Section */}
       <Animated.View style={[styles.brandingContainer, { opacity: 1 }]}>
-        <Text style={styles.mainTitle}>Food-Nest</Text>
-        <Text style={styles.slogan}>Your Street, Your Feast.</Text>
+        <Text style={styles.mainTitle}>{t("brand.title")}</Text>
+        <Text style={styles.slogan}>{t("brand.tagline")}</Text>
       </Animated.View>
 
       {/* Forms */}
       <Animated.View style={[styles.formContainer, { opacity: 1 }]}>
-        {/* Email (shared across modes) */}
+        {/* Email */}
         <View style={styles.inputContainer}>
           <Feather name="mail" size={20} color="#666" style={styles.inputIcon} />
           <TextInput
-            placeholder="Email"
+            placeholder={t("placeholders.email")}
             autoCapitalize="none"
             keyboardType="email-address"
             value={email}
@@ -198,7 +191,7 @@ export default function LoginScreen() {
             <View style={styles.inputContainer}>
               <Feather name="lock" size={20} color="#666" style={styles.inputIcon} />
               <TextInput
-                placeholder="Password"
+                placeholder={t("placeholders.password")}
                 secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={setPassword}
@@ -217,16 +210,14 @@ export default function LoginScreen() {
 
             {/* Forgot link */}
             <Pressable onPress={() => setMode("forgot")} disabled={busy} style={styles.linkRow}>
-              <Text style={styles.linkText}>Forgot password?</Text>
+              <Text style={styles.linkText}>{t("links.forgotPassword")}</Text>
             </Pressable>
           </>
         )}
 
         {mode === "forgot" && (
           <View style={styles.infoBox}>
-            <Text style={styles.infoText}>
-              Enter your email and tap <Text style={{ fontWeight: "800" }}>Get OTP</Text>. We’ll email you a code.
-            </Text>
+            <Text style={styles.infoText}>{t("forgot.info")}</Text>
           </View>
         )}
 
@@ -235,7 +226,7 @@ export default function LoginScreen() {
             <View style={styles.inputContainer}>
               <Feather name="key" size={20} color="#666" style={styles.inputIcon} />
               <TextInput
-                placeholder="Enter 6-digit code"
+                placeholder={t("placeholders.otp")}
                 keyboardType="number-pad"
                 maxLength={6}
                 value={otp}
@@ -245,7 +236,7 @@ export default function LoginScreen() {
               />
             </View>
             <Pressable onPress={() => setMode("forgot")} disabled={busy} style={styles.linkRow}>
-              <Text style={styles.linkText}>Didn’t get a code? Get a new OTP</Text>
+              <Text style={styles.linkText}>{t("links.resendOtp")}</Text>
             </Pressable>
           </>
         )}
@@ -255,7 +246,7 @@ export default function LoginScreen() {
             <View style={styles.inputContainer}>
               <Feather name="shield" size={20} color="#666" style={styles.inputIcon} />
               <TextInput
-                placeholder="New password"
+                placeholder={t("placeholders.newPassword")}
                 secureTextEntry
                 value={newPassword}
                 onChangeText={setNewPassword}
@@ -266,7 +257,7 @@ export default function LoginScreen() {
             <View style={styles.inputContainer}>
               <Feather name="shield" size={20} color="#666" style={styles.inputIcon} />
               <TextInput
-                placeholder="Confirm new password"
+                placeholder={t("placeholders.confirmPassword")}
                 secureTextEntry
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
@@ -282,19 +273,19 @@ export default function LoginScreen() {
       <Animated.View style={[styles.buttonContainer, { opacity: 1 }]}>
         {mode === "login" && (
           <YellowButton onPress={handleLogin} disabled={busy}>
-            Login
+            {t("buttons.login")}
           </YellowButton>
         )}
 
         {mode === "forgot" && (
           <YellowButton onPress={requestOtp} disabled={busy || !email}>
-            Get OTP
+            {t("buttons.getOtp")}
           </YellowButton>
         )}
 
         {mode === "otp" && (
           <YellowButton onPress={verifyOtp} disabled={busy || otp.trim().length < 4}>
-            Verify OTP
+            {t("buttons.verifyOtp")}
           </YellowButton>
         )}
 
@@ -303,11 +294,10 @@ export default function LoginScreen() {
             onPress={resetPassword}
             disabled={busy || !newPassword || !confirmPassword || newPassword !== confirmPassword}
           >
-            Set New Password
+            {t("buttons.setNewPassword")}
           </YellowButton>
         )}
 
-        {/* Back to login link for non-login modes */}
         {mode !== "login" && (
           <Pressable
             onPress={() => {
@@ -320,7 +310,7 @@ export default function LoginScreen() {
             style={[styles.linkRow, { marginTop: 12 }]}
           >
             <Text style={styles.linkTextAlt}>
-              <Feather name="arrow-left" size={14} /> Back to login
+              <Feather name="arrow-left" size={14} /> {t("links.backToLogin")}
             </Text>
           </Pressable>
         )}
@@ -330,97 +320,22 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 24,
-    backgroundColor: "#fffbe9", // subtle warm base for food vibe
-  },
-  brandingContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 80,
-    marginBottom: 60,
-  },
-  mainTitle: {
-    fontSize: 36,
-    fontWeight: "800",
-    color: "#7A4F01", // rich brown pairs well with yellows
-    textAlign: "center",
-    marginBottom: 8,
-    letterSpacing: 1,
-  },
-  slogan: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#8c6e54",
-    textAlign: "center",
-    fontStyle: "italic",
-    letterSpacing: 0.5,
-  },
-  formContainer: {
-    gap: 16,
-    marginBottom: 24,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#f1e2b6",
-    borderRadius: 16,
-    backgroundColor: "white",
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-  },
-  inputIcon: {
-    marginRight: 12,
-  },
-  textInput: {
-    flex: 1,
-    paddingVertical: 16,
-    fontSize: 16,
-    color: "#333",
-  },
-  eyeButton: {
-    paddingLeft: 8,
-    paddingVertical: 8,
-  },
-  buttonContainer: {
-    alignItems: "center",
-  },
-  loginButtonContainer: {
-    borderRadius: 16,
-    shadowColor: "#FFA000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 5,
-    minWidth: 200,
-    overflow: "hidden",
-  },
-  loginButtonGradient: {
-    paddingVertical: 18,
-    paddingHorizontal: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  loginButtonText: {
-    color: "white",
-    fontWeight: "700",
-    fontSize: 16,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-  // small link styles
+  container: { flex: 1, padding: 24, backgroundColor: "#fffbe9" },
+  brandingContainer: { alignItems: "center", justifyContent: "center", marginTop: 80, marginBottom: 60 },
+  mainTitle: { fontSize: 36, fontWeight: "800", color: "#7A4F01", textAlign: "center", marginBottom: 8, letterSpacing: 1 },
+  slogan: { fontSize: 16, fontWeight: "500", color: "#8c6e54", textAlign: "center", fontStyle: "italic", letterSpacing: 0.5 },
+  formContainer: { gap: 16, marginBottom: 24 },
+  inputContainer: { flexDirection: "row", alignItems: "center", borderWidth: 2, borderColor: "#f1e2b6", borderRadius: 16, backgroundColor: "white", paddingHorizontal: 16, paddingVertical: 4 },
+  inputIcon: { marginRight: 12 },
+  textInput: { flex: 1, paddingVertical: 16, fontSize: 16, color: "#333" },
+  eyeButton: { paddingLeft: 8, paddingVertical: 8 },
+  buttonContainer: { alignItems: "center" },
+  loginButtonContainer: { borderRadius: 16, shadowColor: "#FFA000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 10, elevation: 5, minWidth: 200, overflow: "hidden" },
+  loginButtonGradient: { paddingVertical: 18, paddingHorizontal: 24, alignItems: "center", justifyContent: "center" },
+  loginButtonText: { color: "white", fontWeight: "700", fontSize: 16, letterSpacing: 0.5, textTransform: "uppercase" },
   linkRow: { alignSelf: "flex-end" },
   linkText: { color: "#8c6e54", fontWeight: "700", paddingVertical: 8 },
   linkTextAlt: { color: "#8c6e54", fontWeight: "700" },
-  // info box
-  infoBox: {
-    backgroundColor: "#FFF3C4",
-    borderColor: "#FDE68A",
-    borderWidth: 1,
-    padding: 12,
-    borderRadius: 12,
-  },
+  infoBox: { backgroundColor: "#FFF3C4", borderColor: "#FDE68A", borderWidth: 1, padding: 12, borderRadius: 12 },
   infoText: { color: "#7A4F01" },
 });

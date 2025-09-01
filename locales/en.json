@@ -1,0 +1,58 @@
+{
+    "appName": "FoodNest Native",
+    "common.ok": "OK",
+    "common.cancel": "Cancel",
+    "auth.login": "Login",
+    "auth.logout": "Logout",
+    "home.title": "Welcome to FoodNest",
+    "roles.superadmin": "Super Admin",
+    "roles.rider": "Rider",
+    "roles.cook": "Cook",
+    "roles.supervisor": "Supervisor",
+    "roles.refill": "Refill Coordinator",
+    "language.english": "English",
+    "language.thai": "ไทย",
+    "language.select": "Language",
+    "brand.title": "Food-Nest",
+  "brand.tagline": "Your Street, Your Feast.",
+
+  "placeholders.email": "Email",
+  "placeholders.password": "Password",
+  "placeholders.otp": "Enter 6-digit code",
+  "placeholders.newPassword": "New password",
+  "placeholders.confirmPassword": "Confirm new password",
+
+  "links.forgotPassword": "Forgot password?",
+  "links.resendOtp": "Didn’t get a code? Get a new OTP",
+  "links.backToLogin": "Back to login",
+
+  "buttons.login": "Login",
+  "buttons.getOtp": "Get OTP",
+  "buttons.verifyOtp": "Verify OTP",
+  "buttons.setNewPassword": "Set New Password",
+
+  "forgot.info": "Enter your email and tap Get OTP. We’ll email you a code.",
+
+  "alerts.missingInfo.title": "Missing info",
+  "alerts.missingInfo.msg": "Enter email and password.",
+  "alerts.loginFailed.title": "Login failed",
+  "alerts.emailRequired.title": "Email required",
+  "alerts.emailRequired.msg": "Please enter your account email.",
+  "alerts.otpSent.title": "OTP sent",
+  "alerts.otpSent.msg": "We’ve sent a code to your email.",
+  "alerts.error.title": "Error",
+  "alerts.invalidCode.title": "Invalid code",
+  "alerts.invalidCode.msg": "Enter the code from your email.",
+  "alerts.invalidOrExpired.title": "Invalid or expired",
+  "alerts.weakPassword.title": "Weak password",
+  "alerts.weakPassword.msg": "Password must be at least 6 characters.",
+  "alerts.mismatch.title": "Mismatch",
+  "alerts.mismatch.msg": "New password and confirmation don’t match.",
+  "alerts.success.title": "Success",
+  "alerts.success.msg": "Password updated. Please log in.",
+  "alerts.couldNotReset.title": "Could not reset",
+
+  "errors.noToken": "No token returned from server",
+  "errors.generic": "Something went wrong"
+  }
+  
