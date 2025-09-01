@@ -53,6 +53,204 @@
     "alerts.couldNotReset.title": "ไม่สามารถตั้งค่าใหม่ได้",
   
     "errors.noToken": "เซิร์ฟเวอร์ไม่ส่งโทเค็นกลับมา",
-    "errors.generic": "เกิดข้อผิดพลาด"
+    "errors.generic": "เกิดข้อผิดพลาด",
+     "common.alert": "แจ้งเตือน",
+  "superadmin": {
+    "header": {
+      "title": "ภาพรวมแดชบอร์ด",
+      "subtitle": "ติดตามการดำเนินงานของรถอาหาร"
+    },
+    "analytics": {
+      "totalSales": "ยอดขายรวม",
+      "activeRoutes": "เส้นทางที่ใช้งาน",
+      "inventoryLow": "สต็อกเหลือน้อย",
+      "foodRequests": "คำขอทำอาหาร",
+      "delta": "{{change}} จากสัปดาห์ที่แล้ว"
+    },
+    "recent": {
+      "title": "กิจกรรมล่าสุด",
+      "subtitle": "รายการกิจกรรมของระบบ",
+      "items": {
+        "newRider": "มอบหมายไรเดอร์ใหม่",
+        "inventory": "แจ้งเตือนสต็อก",
+        "inventorySub": "เนื้อเบอร์เกอร์ใกล้หมด",
+        "foodAdded": "เพิ่มรายการอาหาร"
+      }
+    },
+    "stats": {
+      "title": "สถิติย่อ",
+      "subtitle": "ประสิทธิภาพของระบบ",
+      "items": {
+        "totalUsers": "ผู้ใช้ทั้งหมด",
+        "activeCarts": "รถที่ใช้งาน",
+        "menuItems": "รายการเมนู",
+        "routes": "เส้นทาง"
+      }
+    }
+  },
+  "userMgmt": {
+    "header": {
+      "title": "จัดการผู้ใช้",
+      "subtitle": "จัดการผู้ใช้ระบบและบทบาท"
+    },
+    "table": {
+      "name": "ชื่อ",
+      "email": "อีเมล",
+      "role": "บทบาท",
+      "status": "สถานะ",
+      "actions": "การทำงาน"
+    },
+    "buttons": {
+      "addUser": "เพิ่มผู้ใช้",
+      "cancel": "ยกเลิก",
+      "createUser": "สร้างผู้ใช้",
+      "saveUser": "บันทึกผู้ใช้"
+    },
+    "modal": {
+      "titleAdd": "เพิ่มผู้ใช้ใหม่",
+      "titleEdit": "แก้ไขผู้ใช้",
+      "subtitle": "สร้างบัญชีผู้ใช้ใหม่สำหรับระบบ"
+    },
+    "fields": {
+      "name": "ชื่อ",
+      "email": "อีเมล",
+      "role": "บทบาท",
+      "currency": "สกุลเงิน",
+      "baseSalary": "เงินเดือนพื้นฐาน",
+      "payFrequency": "รอบการจ่าย",
+      "employmentType": "ประเภทการจ้างงาน",
+      "taxVat": "ภาษี / VAT (%)",
+      "effectiveFrom": "มีผลตั้งแต่",
+      "otEligible": "มีสิทธิ์โอที",
+      "otRate": "อัตราโอที (%)",
+      "allowances": "เบี้ยเลี้ยง",
+      "deductions": "รายการหัก",
+      "taxId": "รหัสภาษี (ถ้ามี)",
+      "bankDetails": "รายละเอียดธนาคาร",
+      "bankHolder": "ชื่อเจ้าของบัญชี",
+      "bankAccount": "เลขที่บัญชี / IBAN",
+      "bankName": "ชื่อธนาคาร",
+      "ifscSwift": "IFSC / SWIFT",
+      "notes": "บันทึก"
+    },
+    "placeholders": {
+      "fullName": "ชื่อ-นามสกุล",
+      "emailExample": "user@email.com",
+      "roleExample": "Rider / Cook / Supervisor / Admin / Kitchen Helper",
+      "currencyExample": "THB / INR / USD",
+      "baseSalaryExample": "เช่น 25000",
+      "payFrequencyExample": "รายเดือน / รายสัปดาห์ / รายวัน / รายชั่วโมง",
+      "employmentTypeExample": "ประจำ / พาร์ทไทม์ / สัญญาจ้าง / กิ๊ก",
+      "taxVatExample": "เช่น 5",
+      "effectiveFromExample": "ค.ศ. YYYY-MM-DD",
+      "otRateExample": "เช่น 150",
+      "allowancesExample": "ยอดรวมเบี้ยเลี้ยงรายเดือน",
+      "deductionsExample": "ยอดรวมรายการหักรายเดือน",
+      "taxIdExample": "PAN / TIN / เลขประจำตัวผู้เสียภาษี",
+      "bankHolderExample": "ชื่อตามบัญชีธนาคาร",
+      "bankAccountExample": "XXXX-XXXX-XXXX",
+      "bankNameExample": "เช่น HDFC, SCB",
+      "ifscSwiftExample": "IFSC (อินเดีย) / SWIFT (ต่างประเทศ)",
+      "notesExample": "เงื่อนไขการจ่ายพิเศษ / หมายเหตุ"
+    },
+    "statuses": {
+      "active": "ใช้งาน",
+      "inactive": "ไม่ใช้งาน"
+    },
+    "roles": {
+      "Rider": "ไรเดอร์",
+      "Cook": "พ่อครัว",
+      "Supervisor": "หัวหน้างาน",
+      "Refill Coordinator": "ผู้ประสานงานเติมสินค้า",
+      "Admin": "ผู้ดูแลระบบ",
+      "Kitchen Helper": "ผู้ช่วยครัว"
+    },
+    "alerts": {
+      "invalidNameEmail": "กรุณากรอกชื่อและอีเมลที่ถูกต้อง"
+    }
+  },
+   "food": {
+    "header": {
+      "title": "รายการอาหาร",
+      "subtitle": "จัดการเมนูและราคา"
+    },
+    "buttons": {
+      "add": "เพิ่มรายการอาหาร",
+      "cancel": "ยกเลิก",
+      "save": "บันทึกรายการ"
+    },
+    "status": {
+      "available": "พร้อมจำหน่าย",
+      "unavailable": "ไม่พร้อมจำหน่าย"
+    },
+    "list": {
+      "noImage": "ไม่มีรูปภาพ",
+      "rawMaterials": "วัตถุดิบ"
+    },
+    "modal": {
+      "titleAdd": "เพิ่มรายการอาหารใหม่",
+      "titleEdit": "แก้ไขรายการอาหาร",
+      "desc": "สร้างเมนูใหม่"
+    },
+    "fields": {
+      "name": "ชื่ออาหาร",
+      "price": "ราคา (฿)",
+      "category": "หมวดหมู่",
+      "tax": "ภาษี / VAT (%)",
+      "available": "พร้อมจำหน่าย",
+      "image": "รูปภาพอาหาร",
+      "rawMaterials": "วัตถุดิบ"
+    },
+    "placeholders": {
+      "name": "กรอกชื่ออาหาร",
+      "price": "0.00",
+      "category": "เช่น ของว่าง, เครื่องดื่ม",
+      "tax": "เช่น 5",
+      "rmName": "เช่น โปฮา, น้ำมัน, ถั่วลิสง",
+      "addAnotherMaterial": "เพิ่มวัตถุดิบอีก",
+      "uploadTap": "แตะเพื่ออัปโหลดหรือเลือกรูปจากแกลเลอรี",
+      "uploadHint": "รองรับ PNG, JPG ขนาดไม่เกิน 10MB"
+    },
+    "currency": {
+      "inr": "รูปี"
+    },
+    "alerts": {
+      "permissionNeededTitle": "ต้องการสิทธิ์",
+      "permissionNeededMsg": "โปรดอนุญาตการเข้าถึงสื่อเพื่อเลือกรูปภาพ",
+      "saveFailedTitle": "บันทึกล้มเหลว",
+      "saveFailedMsg": "ไม่สามารถบันทึกรายการได้",
+      "deleteFailedTitle": "ลบไม่สำเร็จ",
+      "deleteFailedMsg": "ไม่สามารถลบรายการได้",
+      "invalidForm": "โปรดกรอกชื่อ หมวดหมู่ และราคาให้ถูกต้อง"
+    }
+  },
+   "inventory": {
+    "header": {
+      "title": "จัดการคลังสินค้า",
+      "subtitle": "ติดตามสต็อกและคำขอวัตถุดิบ"
+    },
+    "buttons": {
+      "refresh": "รีเฟรช",
+      "addItem": "เพิ่มรายการ"
+    },
+    "sections": {
+      "stock": { "title": "ระดับสต็อก", "desc": "สถานะสต็อกปัจจุบัน" },
+      "cook":  { "title": "สถานะครัว", "desc": "สถานะการเตรียมอาหารปัจจุบัน" },
+      "rider": { "title": "ตำแหน่งไรเดอร์แบบสด", "desc": "ตำแหน่งและสถานะของไรเดอร์" },
+      "requests": { "title": "คำขอวัตถุดิบ", "desc": "คำขอที่รอดำเนินการจากพ่อครัว" }
+    },
+    "labels": {
+      "requests": "คำขอ",
+      "units": "หน่วย",
+      "updated": "อัปเดต"
+    },
+    "status": {
+      "inventory": { "Critical": "วิกฤต", "Low": "ต่ำ", "Good": "ปกติ" },
+      "cook": { "Ready": "พร้อม", "Processing": "กำลังทำ" },
+      "rider": { "Active": "กำลังวิ่งงาน", "Returning": "กำลังกลับฐาน" },
+      "req": { "Pending": "รอดำเนินการ", "Approved": "อนุมัติ", "Rejected": "ปฏิเสธ" }
+    },
+    "actions": { "approve": "อนุมัติ", "decline": "ปฏิเสธ" }
+  }
   }
   

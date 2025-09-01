@@ -53,6 +53,204 @@
   "alerts.couldNotReset.title": "Could not reset",
 
   "errors.noToken": "No token returned from server",
-  "errors.generic": "Something went wrong"
+  "errors.generic": "Something went wrong",
+   "common.alert": "Alert",
+  "superadmin": {
+    "header": {
+      "title": "Dashboard Overview",
+      "subtitle": "Monitor your food cart operations"
+    },
+    "analytics": {
+      "totalSales": "Total Sales",
+      "activeRoutes": "Active Routes",
+      "inventoryLow": "Inventory Low",
+      "foodRequests": "Food Requests",
+      "delta": "{{change}} from last week"
+    },
+    "recent": {
+      "title": "Recent Activities",
+      "subtitle": "Latest system activities",
+      "items": {
+        "newRider": "New rider assigned",
+        "inventory": "Inventory alert",
+        "inventorySub": "Burger patties running low",
+        "foodAdded": "Food item added"
+      }
+    },
+    "stats": {
+      "title": "Quick Stats",
+      "subtitle": "System performance",
+      "items": {
+        "totalUsers": "Total Users",
+        "activeCarts": "Active Carts",
+        "menuItems": "Menu Items",
+        "routes": "Routes"
+      }
+    }
+  },
+   "userMgmt": {
+    "header": {
+      "title": "User Management",
+      "subtitle": "Manage system users and their roles"
+    },
+    "table": {
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "buttons": {
+      "addUser": "Add User",
+      "cancel": "Cancel",
+      "createUser": "Create User",
+      "saveUser": "Save User"
+    },
+    "modal": {
+      "titleAdd": "Add New User",
+      "titleEdit": "Edit User",
+      "subtitle": "Create a new user account for the system."
+    },
+    "fields": {
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "currency": "Currency",
+      "baseSalary": "Base Salary",
+      "payFrequency": "Pay Frequency",
+      "employmentType": "Employment Type",
+      "taxVat": "Tax / VAT (%)",
+      "effectiveFrom": "Effective From",
+      "otEligible": "Overtime Eligible",
+      "otRate": "OT Rate (%)",
+      "allowances": "Allowances",
+      "deductions": "Deductions",
+      "taxId": "Tax ID (optional)",
+      "bankDetails": "Bank Details",
+      "bankHolder": "Account Holder",
+      "bankAccount": "Account No / IBAN",
+      "bankName": "Bank Name",
+      "ifscSwift": "IFSC / SWIFT",
+      "notes": "Notes"
+    },
+    "placeholders": {
+      "fullName": "Full name",
+      "emailExample": "user@email.com",
+      "roleExample": "Rider / Cook / Supervisor / Admin / Kitchen Helper",
+      "currencyExample": "THB / INR / USD",
+      "baseSalaryExample": "e.g., 25000",
+      "payFrequencyExample": "Monthly / Weekly / Daily / Hourly",
+      "employmentTypeExample": "Full-time / Part-time / Contract / Gig",
+      "taxVatExample": "e.g., 5",
+      "effectiveFromExample": "YYYY-MM-DD",
+      "otRateExample": "e.g., 150",
+      "allowancesExample": "Monthly total allowances",
+      "deductionsExample": "Monthly total deductions",
+      "taxIdExample": "PAN / TIN / National Tax ID",
+      "bankHolderExample": "Name as per bank",
+      "bankAccountExample": "XXXX-XXXX-XXXX",
+      "bankNameExample": "e.g., HDFC, SCB",
+      "ifscSwiftExample": "IFSC (India) / SWIFT (Intl.)",
+      "notesExample": "Any special pay terms / remarks"
+    },
+    "statuses": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "roles": {
+      "Rider": "Rider",
+      "Cook": "Cook",
+      "Supervisor": "Supervisor",
+      "Refill Coordinator": "Refill Coordinator",
+      "Admin": "Admin",
+      "Kitchen Helper": "Kitchen Helper"
+    },
+    "alerts": {
+      "invalidNameEmail": "Please enter a valid name and email."
+    }
+  },
+    "food": {
+    "header": {
+      "title": "Food Items",
+      "subtitle": "Manage menu items and pricing"
+    },
+    "buttons": {
+      "add": "Add Food Item",
+      "cancel": "Cancel",
+      "save": "Save Item"
+    },
+    "status": {
+      "available": "Available",
+      "unavailable": "Unavailable"
+    },
+    "list": {
+      "noImage": "No image",
+      "rawMaterials": "Raw materials"
+    },
+    "modal": {
+      "titleAdd": "Add New Food Item",
+      "titleEdit": "Edit Food Item",
+      "desc": "Create a new menu item"
+    },
+    "fields": {
+      "name": "Food Name",
+      "price": "Price (฿)",
+      "category": "Category",
+      "tax": "Tax / VAT (%)",
+      "available": "Available",
+      "image": "Food Image",
+      "rawMaterials": "Raw Materials"
+    },
+    "placeholders": {
+      "name": "Enter food name",
+      "price": "0.00",
+      "category": "e.g., Snacks, Beverages",
+      "tax": "e.g., 5",
+      "rmName": "e.g., Poha, Oil, Peanuts",
+      "addAnotherMaterial": "Add another material",
+      "uploadTap": "Tap to upload or pick from gallery",
+      "uploadHint": "PNG, JPG up to 10MB"
+    },
+    "currency": {
+      "inr": "INR"
+    },
+    "alerts": {
+      "permissionNeededTitle": "Permission needed",
+      "permissionNeededMsg": "We need media permission to choose a photo.",
+      "saveFailedTitle": "Save failed",
+      "saveFailedMsg": "Unable to save item",
+      "deleteFailedTitle": "Delete failed",
+      "deleteFailedMsg": "Unable to delete",
+      "invalidForm": "Please fill valid Name, Category and Price."
+    }
+  },
+    "inventory": {
+    "header": {
+      "title": "Inventory Management",
+      "subtitle": "Monitor stock levels and material requests"
+    },
+    "buttons": {
+      "refresh": "Refresh",
+      "addItem": "Add Item"
+    },
+    "sections": {
+      "stock": { "title": "Stock Levels", "desc": "Current inventory status" },
+      "cook":  { "title": "Cook Status", "desc": "Current food preparation status" },
+      "rider": { "title": "Live Rider Locations", "desc": "Current rider positions and status" },
+      "requests": { "title": "Raw Material Requests", "desc": "Pending requests from cooks" }
+    },
+    "labels": {
+      "requests": "requests",
+      "units": "units",
+      "updated": "Updated"
+    },
+    "status": {
+      "inventory": { "Critical": "Critical", "Low": "Low", "Good": "Good" },
+      "cook": { "Ready": "Ready", "Processing": "Processing" },
+      "rider": { "Active": "Active", "Returning": "Returning" },
+      "req": { "Pending": "Pending", "Approved": "Approved", "Rejected": "Rejected" }
+    },
+    "actions": { "approve": "Approve", "decline": "Decline" }
+  }
   }
   

@@ -7,6 +7,8 @@ import {
   Pressable,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next"; // ✅ ADD
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 /* ===== Seed data ===== */
 type Inv = { id: number; name: string; current: number; max: number; unit: string; status: "Critical" | "Low" | "Good"; requests: number };
@@ -48,6 +50,7 @@ const statusTone = (s: Inv["status"]) =>
 const badgeStyle = (bg: string) => ({ backgroundColor: `${bg}22`, borderColor: `${bg}55` });
 
 export default function Inventory() {
+  const { t } = useTranslation(); // ✅ ADD
   const [requests, setRequests] = useState(initRequests);
 
   const approve = (id: number) =>
@@ -63,25 +66,30 @@ export default function Inventory() {
 
   return (
     <ScrollView contentContainerStyle={styles.page}>
+      <LanguageSwitcher />
       {/* Header */}
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.h1}>Inventory Management</Text>
-          <Text style={styles.subtle}>Monitor stock levels and material requests</Text>
+          <Text style={styles.h1}>{t("inventory.header.title")}</Text>
+          <Text style={styles.subtle}>{t("inventory.header.subtitle")}</Text>
         </View>
         <View style={{ flexDirection: "row", gap: 8 }}>
           <Btn variant="outline" onPress={() => { /* refetch */ }}>
-            <Feather name="refresh-ccw" size={16} /> <Text> Refresh</Text>
+            <Feather name="refresh-ccw" size={16} /> <Text> {t("inventory.buttons.refresh")}</Text>
           </Btn>
           <Btn onPress={() => { /* open add item modal */ }}>
-            <Feather name="plus" size={16} color="#fff" /> <Text style={{ color: "#fff" }}> Add Item</Text>
+            <Feather name="plus" size={16} color="#fff" /> <Text style={{ color: "#fff" }}> {t("inventory.buttons.addItem")}</Text>
           </Btn>
         </View>
       </View>
 
       {/* ---- Stock Levels (full width row) ---- */}
       <Card>
-        <CardHeader icon="package" title="Stock Levels" desc="Current inventory status" />
+        <CardHeader
+          icon="package"
+          title={t("inventory.sections.stock.title")}
+          desc={t("inventory.sections.stock.desc")}
+        />
         <View style={{ gap: 12 }}>
           {inventoryItems.map((it) => {
             const color = statusTone(it.status);
@@ -92,16 +100,20 @@ export default function Inventory() {
                   <View style={[styles.row, { alignItems: "center", gap: 8 }]}>
                     <Text style={{ fontWeight: "700" }}>{it.name}</Text>
                     <View style={[styles.badge, badgeStyle(color)]}>
-                      <Text style={[styles.badgeText, { color }]}>{it.status}</Text>
+                      <Text style={[styles.badgeText, { color }]}>
+                        {t(`inventory.status.inventory.${it.status}`)}
+                      </Text>
                     </View>
                     {it.requests > 0 && (
                       <View style={[styles.badge, badgeStyle("#7c3aed")]}>
-                        <Text style={[styles.badgeText, { color: "#7c3aed" }]}>{it.requests} requests</Text>
+                        <Text style={[styles.badgeText, { color: "#7c3aed" }]}>
+                          {it.requests} {t("inventory.labels.requests")}
+                        </Text>
                       </View>
                     )}
                   </View>
                   <Text style={styles.subtleSmall}>
-                    {it.current}/{it.max} {it.unit}
+                    {it.current}/{it.max} {t("inventory.labels.units")}
                   </Text>
                 </View>
 
@@ -121,7 +133,11 @@ export default function Inventory() {
 
       {/* ---- Cook Status (full width row) ---- */}
       <Card>
-        <CardHeader icon="briefcase" title="Cook Status" desc="Current food preparation status" />
+        <CardHeader
+          icon="briefcase"
+          title={t("inventory.sections.cook.title")}
+          desc={t("inventory.sections.cook.desc")}
+        />
         <View style={{ gap: 10 }}>
           {gridCook.map((row, i) => (
             <View key={i} style={styles.row}>
@@ -141,13 +157,13 @@ export default function Inventory() {
                           { color: c.status === "Ready" ? "#065f46" : "#92400e" },
                         ]}
                       >
-                        {c.status}
+                        {t(`inventory.status.cook.${c.status}`)}
                       </Text>
                     </View>
                   </View>
                   <View style={styles.rowBetween}>
                     <Text style={styles.subtleSmall}>{c.cook}</Text>
-                    <Text style={styles.subtleSmall}>{c.quantity} units</Text>
+                    <Text style={styles.subtleSmall}>{c.quantity} {t("inventory.labels.units")}</Text>
                   </View>
                 </View>
               ))}
@@ -159,7 +175,11 @@ export default function Inventory() {
 
       {/* ---- Live Rider Locations (full width) ---- */}
       <Card>
-        <CardHeader icon="map-pin" title="Live Rider Locations" desc="Current rider positions and status" />
+        <CardHeader
+          icon="map-pin"
+          title={t("inventory.sections.rider.title")}
+          desc={t("inventory.sections.rider.desc")}
+        />
         <View style={{ gap: 10 }}>
           {liveRiderLocations.map((r) => (
             <View key={r.id} style={styles.softTile}>
@@ -177,14 +197,14 @@ export default function Inventory() {
                       { color: r.status === "Active" ? "#065f46" : "#5b21b6" },
                     ]}
                   >
-                    {r.status}
+                    {t(`inventory.status.rider.${r.status}`)}
                   </Text>
                 </View>
               </View>
               <Text style={styles.subtleSmall}>{r.location}</Text>
               <View style={styles.rowBetween}>
                 <Text style={styles.subtleSmall}>{r.route}</Text>
-                <Text style={styles.subtleSmall}>Updated {r.lastUpdate}</Text>
+                <Text style={styles.subtleSmall}>{t("inventory.labels.updated")} {r.lastUpdate}</Text>
               </View>
             </View>
           ))}
@@ -193,7 +213,11 @@ export default function Inventory() {
 
       {/* ---- Raw Material Requests (full width) ---- */}
       <Card>
-        <CardHeader icon="alert-triangle" title="Raw Material Requests" desc="Pending requests from cooks" />
+        <CardHeader
+          icon="alert-triangle"
+          title={t("inventory.sections.requests.title")}
+          desc={t("inventory.sections.requests.desc")}
+        />
         <View style={{ gap: 10 }}>
           {requests.map((req) => (
             <View key={req.id} style={[styles.softTile, { gap: 6 }]}>
@@ -224,14 +248,14 @@ export default function Inventory() {
                       },
                     ]}
                   >
-                    {req.status}
+                    {t(`inventory.status.req.${req.status}`)}
                   </Text>
                 </View>
               </View>
 
               <View style={styles.rowBetween}>
                 <Text style={[styles.subtleSmall, { fontWeight: "600" }]}>
-                  {req.quantity} units
+                  {req.quantity} {t("inventory.labels.units")}
                 </Text>
                 <Text style={styles.subtleSmall}>{req.time}</Text>
               </View>
@@ -242,10 +266,10 @@ export default function Inventory() {
               {req.status === "Pending" && (
                 <View style={{ flexDirection: "row", gap: 8, marginTop: 6 }}>
                   <Btn onPress={() => approve(req.id)}>
-                    <Text style={{ color: "#fff", fontWeight: "600" }}>Approve</Text>
+                    <Text style={{ color: "#fff", fontWeight: "600" }}>{t("inventory.actions.approve")}</Text>
                   </Btn>
                   <Btn variant="outline" onPress={() => reject(req.id)}>
-                    <Text>Decline</Text>
+                    <Text>{t("inventory.actions.decline")}</Text>
                   </Btn>
                 </View>
               )}
