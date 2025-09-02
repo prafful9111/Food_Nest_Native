@@ -10,6 +10,7 @@ import {
   TextInput,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 /* ===================== Types ===================== */
 type VehicleStatus = "Available" | "In Use" | "Issue";
@@ -79,7 +80,7 @@ const seedVehicles: Vehicle[] = [
   },
 ];
 
-// Batteries
+// Batteries (sample batteries kept)
 const seedBatteries: Battery[] = [
   {
     id: 1,
@@ -168,6 +169,33 @@ const field = (label: string, children: React.ReactNode) => (
   </View>
 );
 const today = () => new Date().toISOString().slice(0, 10);
+const UNASSIGNED_VEHICLE_ID = 0;
+
+/* ===== Reusable: Gradient primary button (yellow) ===== */
+function SolidButton({
+  onPress,
+  disabled,
+  children,
+  style,
+}: {
+  onPress: () => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+  style?: any;
+}) {
+  return (
+    <Pressable onPress={onPress} disabled={disabled} style={{ borderRadius: 10, overflow: "hidden" }}>
+      <LinearGradient
+        colors={["#fde047", "#facc15"]} // amber-300 -> amber-400
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.btnSolid, disabled && { opacity: 0.5 }, style]}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center" }}>{children}</View>
+      </LinearGradient>
+    </Pressable>
+  );
+}
 
 /* ===================== Screen ===================== */
 export default function VehiclesManagement() {
@@ -188,13 +216,24 @@ export default function VehiclesManagement() {
   const [issueType, setIssueType] = useState("");
   const [issueDesc, setIssueDesc] = useState("");
 
-  // Battery modal
+  // Battery modal (per-vehicle)
   const [openBattery, setOpenBattery] = useState(false);
   const [batIMEI, setBatIMEI] = useState("");
   const [batType, setBatType] = useState<Battery["type"] | "">("");
   const [batCapacity, setBatCapacity] = useState("");
   const [batInstallDate, setBatInstallDate] = useState("");
   const [batStatus, setBatStatus] = useState<Battery["status"] | "">("");
+
+  // Global Add Battery modal
+  const [openAddBattery, setOpenAddBattery] = useState(false);
+  const [newBatIMEI, setNewBatIMEI] = useState("");
+  const [newBatType, setNewBatType] = useState<Battery["type"] | "">("");
+  const [newBatCapacity, setNewBatCapacity] = useState("");
+  const [newBatInstallDate, setNewBatInstallDate] = useState("");
+  const [newBatStatus, setNewBatStatus] = useState<Battery["status"] | "">("");
+
+  // Picker for existing unassigned batteries (inside per-vehicle Battery modal)
+  const [pickExistingIMEI, setPickExistingIMEI] = useState<string>("");
 
   // Service modal
   const [openService, setOpenService] = useState(false);
@@ -204,6 +243,10 @@ export default function VehiclesManagement() {
 
   // Assign rider mini-picker
   const availableRiders = useMemo(() => riders.filter((r) => r.available), []);
+  const unassignedBatteries = useMemo(
+    () => batteries.filter((b) => b.vehicleId === UNASSIGNED_VEHICLE_ID),
+    [batteries]
+  );
 
   // Prefill battery form when opening on a vehicle
   useEffect(() => {
@@ -223,6 +266,8 @@ export default function VehiclesManagement() {
       setBatInstallDate("");
       setBatStatus("");
     }
+    // reset picker only when the modal opens
+    setPickExistingIMEI("");
   }, [openBattery, activeVehicle, batteries]);
 
   /* ===================== Actions ===================== */
@@ -293,27 +338,51 @@ export default function VehiclesManagement() {
     if (!batIMEI || !batType || !batStatus) return;
 
     setBatteries((prev) => {
-      const existing = prev.find((b) => b.vehicleId === activeVehicle.id);
-      if (existing) {
+      const byVehicle = prev.find((b) => b.vehicleId === activeVehicle.id);
+      const byIMEI = prev.find((b) => b.imei === batIMEI.trim());
+
+      // If IMEI exists elsewhere, move it to this vehicle (and free previous)
+      if (byIMEI && byIMEI.vehicleId !== activeVehicle.id) {
+        return prev.map((b) =>
+          b.id === byIMEI.id
+            ? {
+                ...b,
+                type: batType as Battery["type"],
+                capacity: batCapacity,
+                installationDate: batInstallDate || b.installationDate || today(),
+                status: batStatus as Battery["status"],
+                lastChecked: today(),
+                vehicleId: activeVehicle.id,
+              }
+            : b.vehicleId === activeVehicle.id && b.id !== byIMEI.id
+            ? { ...b, vehicleId: UNASSIGNED_VEHICLE_ID }
+            : b
+        );
+      }
+
+      // If vehicle already had a battery, update it
+      if (byVehicle) {
         return prev.map((b) =>
           b.vehicleId === activeVehicle.id
             ? {
                 ...b,
-                imei: batIMEI,
+                imei: batIMEI.trim(),
                 type: batType as Battery["type"],
                 capacity: batCapacity,
-                installationDate: batInstallDate || b.installationDate,
+                installationDate: batInstallDate || b.installationDate || today(),
                 status: batStatus as Battery["status"],
                 lastChecked: today(),
               }
             : b
         );
       }
+
+      // Otherwise, create a new battery attached to the vehicle
       return [
         ...prev,
         {
           id: Date.now(),
-          imei: batIMEI,
+          imei: batIMEI.trim(),
           vehicleId: activeVehicle.id,
           type: batType as Battery["type"],
           capacity: batCapacity,
@@ -324,10 +393,10 @@ export default function VehiclesManagement() {
       ];
     });
 
-    // also reflect battery IMEI on the vehicle
+    // reflect battery IMEI on the vehicle
     setVehicles((prev) =>
       prev.map((v) =>
-        v.id === activeVehicle.id ? { ...v, batteryIMEI: batIMEI } : v
+        v.id === activeVehicle.id ? { ...v, batteryIMEI: batIMEI.trim() } : v
       )
     );
 
@@ -353,6 +422,39 @@ export default function VehiclesManagement() {
     setActiveVehicle(null);
   };
 
+  // Add Battery globally (unassigned first)
+  const addBatteryGlobally = () => {
+    if (!newBatIMEI || !newBatType || !newBatStatus) return;
+
+    // prevent duplicates
+    const dup = batteries.some((b) => b.imei.trim() === newBatIMEI.trim());
+    if (dup) {
+      alert("A battery with this IMEI already exists.");
+      return;
+    }
+
+    setBatteries((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        imei: newBatIMEI.trim(),
+        vehicleId: UNASSIGNED_VEHICLE_ID,
+        type: newBatType as Battery["type"],
+        capacity: newBatCapacity.trim(),
+        installationDate: newBatInstallDate || today(),
+        status: newBatStatus as Battery["status"],
+        lastChecked: today(),
+      },
+    ]);
+
+    setOpenAddBattery(false);
+    setNewBatIMEI("");
+    setNewBatType("");
+    setNewBatCapacity("");
+    setNewBatInstallDate("");
+    setNewBatStatus("");
+  };
+
   /* ===================== Render ===================== */
   return (
     <ScrollView contentContainerStyle={styles.page}>
@@ -362,10 +464,20 @@ export default function VehiclesManagement() {
           <Text style={styles.h1}>Vehicles Management</Text>
           <Text style={styles.subtle}>Manage fleet vehicles and track their status</Text>
         </View>
-        <Pressable style={styles.btnSolid} onPress={() => setOpenAdd(true)}>
-          <Feather name="plus" size={16} color="#fff" />
-          <Text style={styles.btnSolidText}>  Add Vehicle</Text>
-        </Pressable>
+      </View>
+
+      {/* Actions row (left-aligned) */}
+      <View style={[styles.row, { gap: 8 }]}>
+        <SolidButton onPress={() => setOpenAdd(true)}>
+          <Feather name="plus" size={16} color="#ffffff" />
+          <Text style={[styles.btnSolidText, { color: "#ffffff", marginLeft: 6 }]}>Add Vehicle</Text>
+        </SolidButton>
+
+        {/* Add Battery button (global) */}
+        <SolidButton onPress={() => setOpenAddBattery(true)}>
+          <Feather name="battery-charging" size={16} color="#ffffff" />
+          <Text style={[styles.btnSolidText, { color: "#ffffff", marginLeft: 6 }]}>Add Battery</Text>
+        </SolidButton>
       </View>
 
       {/* Cards (one per vehicle) */}
@@ -443,7 +555,10 @@ export default function VehiclesManagement() {
                   <Text>  Service</Text>
                 </Pressable>
 
-                <Pressable style={[styles.btnOutlineSm, { borderColor: "#ef4444" }]} onPress={() => openRemoveFor(v)}>
+                <Pressable
+                  style={[styles.btnOutlineSm, { borderColor: "#ef4444" }]}
+                  onPress={() => openRemoveFor(v)}
+                >
                   <Feather name="trash-2" size={14} color="#ef4444" />
                   <Text style={{ color: "#ef4444" }}>  Remove</Text>
                 </Pressable>
@@ -507,13 +622,81 @@ export default function VehiclesManagement() {
               <Pressable style={styles.btnOutline} onPress={() => setOpenAdd(false)}>
                 <Text>Cancel</Text>
               </Pressable>
-              <Pressable
-                style={[styles.btnSolid, !regNo.trim() && { opacity: 0.5 }]}
-                disabled={!regNo.trim()}
-                onPress={addVehicle}
-              >
-                <Text style={styles.btnSolidText}>Add Vehicle</Text>
+              <SolidButton onPress={addVehicle} disabled={!regNo.trim()}>
+                <Text style={[styles.btnSolidText, { color: "#111" }]}>Add Vehicle</Text>
+              </SolidButton>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ===================== Add Battery (Global) Modal ===================== */}
+      <Modal
+        transparent
+        visible={openAddBattery}
+        animationType="slide"
+        onRequestClose={() => setOpenAddBattery(false)}
+      >
+        <View style={styles.backdrop}>
+          <View style={[styles.card, { padding: 16, gap: 12, width: "100%" }]}>
+            <View style={[styles.row, { alignItems: "center", gap: 8 }]}>
+              <Feather name="battery-charging" size={18} />
+              <Text style={{ fontSize: 18, fontWeight: "800" }}>Add New Battery</Text>
+            </View>
+
+            {field("Battery IMEI Number", (
+              <TextInput
+                value={newBatIMEI}
+                onChangeText={setNewBatIMEI}
+                placeholder="e.g., 356938035643899"
+                style={styles.input}
+              />
+            ))}
+
+            {field("Battery Type", (
+              <Segmented
+                options={["Lithium-ion 48V", "Lithium-ion 60V", "Lead Acid 48V", "Lead Acid 60V"]}
+                value={newBatType}
+                onChange={(v) => setNewBatType(v as Battery["type"])}
+              />
+            ))}
+
+            {field("Battery Capacity", (
+              <TextInput
+                value={newBatCapacity}
+                onChangeText={setNewBatCapacity}
+                placeholder="e.g., 20Ah"
+                style={styles.input}
+              />
+            ))}
+
+            {field("Installation Date", (
+              <TextInput
+                value={newBatInstallDate}
+                onChangeText={setNewBatInstallDate}
+                placeholder="YYYY-MM-DD"
+                style={styles.input}
+              />
+            ))}
+
+            {field("Battery Status", (
+              <Segmented
+                options={["Active", "Maintenance", "Faulty"]}
+                value={newBatStatus}
+                onChange={(v) => setNewBatStatus(v as Battery["status"])}
+              />
+            ))}
+
+            <View style={[styles.row, { justifyContent: "flex-end", gap: 8 }]}>
+              <Pressable style={styles.btnOutline} onPress={() => setOpenAddBattery(false)}>
+                <Text>Cancel</Text>
               </Pressable>
+              <SolidButton
+                onPress={addBatteryGlobally}
+                disabled={!newBatIMEI || !newBatType || !newBatStatus}
+              >
+                <Text style={[styles.btnSolidText, { color: "#111" }]}>Add Battery</Text>
+              </SolidButton>
             </View>
           </View>
         </View>
@@ -550,13 +733,9 @@ export default function VehiclesManagement() {
               <Pressable style={styles.btnOutline} onPress={() => setOpenIssue(false)}>
                 <Text>Cancel</Text>
               </Pressable>
-              <Pressable
-                style={[styles.btnSolid, !issueType && { opacity: 0.5 }]}
-                disabled={!issueType}
-                onPress={submitIssue}
-              >
-                <Text style={styles.btnSolidText}>Report Issue</Text>
-              </Pressable>
+              <SolidButton onPress={submitIssue} disabled={!issueType}>
+                <Text style={[styles.btnSolidText, { color: "#111" }]}>Report Issue</Text>
+              </SolidButton>
             </View>
           </View>
         </View>
@@ -573,7 +752,7 @@ export default function VehiclesManagement() {
             <Text style={styles.subtleSmall}>Vehicle: {activeVehicle?.registrationNo ?? "-"}</Text>
 
             {/* Current battery (if any) */}
-            {activeVehicle && (
+            {activeVehicle &&
               (() => {
                 const b = batteries.find((x) => x.vehicleId === activeVehicle.id);
                 if (!b) return null;
@@ -586,7 +765,43 @@ export default function VehiclesManagement() {
                     <Text style={styles.infoText}>Status: {b.status}</Text>
                   </View>
                 );
-              })()
+              })()}
+
+            {/* Choose an existing unassigned battery (optional helper) */}
+            {unassignedBatteries.length > 0 && (
+              <View style={styles.infoBox}>
+                <Text style={styles.infoTitle}>Assign Existing Battery</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 6 }}>
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    {unassignedBatteries.map((b) => {
+                      const active = pickExistingIMEI === b.imei;
+                      return (
+                        <Pressable
+                          key={b.id}
+                          onPress={() => {
+                            if (active) {
+                              setPickExistingIMEI("");
+                            } else {
+                              setPickExistingIMEI(b.imei);
+                              // Pre-fill fields
+                              setBatIMEI(b.imei);
+                              setBatType(b.type);
+                              setBatCapacity(b.capacity || "");
+                              setBatInstallDate(b.installationDate || "");
+                              setBatStatus(b.status);
+                            }
+                          }}
+                          style={[styles.btnOutlineSm, active && { backgroundColor: "#111827" }]}
+                        >
+                          <Feather name="battery" size={14} color={active ? "#fff" : "#111"} />
+                          <Text style={[{ marginLeft: 6 }, active && { color: "#fff" }]}>{b.imei}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
+                <Text style={styles.subtleSmall}>(Tap an IMEI to pre-fill & assign it to this vehicle)</Text>
+              </View>
             )}
 
             {field("Battery IMEI Number", (
@@ -636,20 +851,16 @@ export default function VehiclesManagement() {
               <Pressable style={styles.btnOutline} onPress={() => setOpenBattery(false)}>
                 <Text>Cancel</Text>
               </Pressable>
-              <Pressable
-                style={[
-                  styles.btnSolid,
-                  (!batIMEI || !batType || !batStatus) && { opacity: 0.5 },
-                ]}
-                disabled={!batIMEI || !batType || !batStatus}
+              <SolidButton
                 onPress={submitBattery}
+                disabled={!batIMEI || !batType || !batStatus}
               >
-                <Text style={styles.btnSolidText}>
+                <Text style={[styles.btnSolidText, { color: "#111" }]}>
                   {activeVehicle && batteries.find((b) => b.vehicleId === activeVehicle.id)
                     ? "Update Battery"
                     : "Add Battery"}
                 </Text>
-              </Pressable>
+              </SolidButton>
             </View>
           </View>
         </View>
@@ -840,16 +1051,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
 
-  // Buttons
+  // Buttons (btnSolid now used as the gradient container)
   btnSolid: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#111827",
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 10,
   },
-  btnSolidText: { color: "#fff", fontWeight: "700" },
+  btnSolidText: { fontWeight: "700" },
   btnOutline: {
     flexDirection: "row",
     alignItems: "center",
@@ -858,6 +1066,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 10,
+    backgroundColor: "#fff",
   },
   btnDanger: {
     flexDirection: "row",
@@ -874,7 +1083,8 @@ const styles = StyleSheet.create({
     borderColor: "#d1d5db",
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 999,
+    backgroundColor: "#fff",
   },
 
   // Segmented
