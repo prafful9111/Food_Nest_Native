@@ -109,6 +109,26 @@ export default function SupervisorLayout() {
         }}
       />
 
+<Drawer.Screen
+        name="RequestsManagement"
+        options={{
+          title: "Requests Management",
+          drawerIcon: ({ size }) => <GradientIcon name="package" size={size ?? 24} />,
+        }}
+      />
+            <Drawer.Screen
+        name='Request-management'
+        options={{
+          title: 'Requests Management',
+          drawerIcon: ({ size }) => (
+            <GradientIcon
+              name='bell'
+              size={size}
+            />
+          ),
+        }}
+      />
+
       {/* Custom Signout Button */}
       <Drawer.Screen
         name="signout"
