@@ -58,9 +58,10 @@ export default function SuperAdminLayout() {
 
   useEffect(() => {
     refreshPendingCount();
-    const interval = setInterval(refreshPendingCount, 30000);
-    return () => clearInterval(interval);
+    const id = setInterval(refreshPendingCount, 5 * 60 * 1000);
+    return () => clearInterval(id);
   }, []);
+  
 
   return (
     <Drawer
