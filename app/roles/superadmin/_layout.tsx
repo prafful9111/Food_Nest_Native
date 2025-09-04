@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { api } from '@/lib/api';
 import { LinearGradient } from 'expo-linear-gradient'; // NEW
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Small gradient icon wrapper (yellow food theme)
 function GradientIcon({ name, size = 24 }: { name: any; size?: number }) {
@@ -61,12 +62,29 @@ export default function SuperAdminLayout() {
     const id = setInterval(refreshPendingCount, 5 * 60 * 1000);
     return () => clearInterval(id);
   }, []);
+
+  const [superadminName, setsuperadminName] = useState<string>("");
+
+useEffect(() => {
+  (async () => {
+    try {
+      const raw = await AsyncStorage.getItem("user");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setsuperadminName(parsed?.name || parsed?.email || "");
+      }
+    } catch {
+      setsuperadminName("");
+    }
+  })();
+}, []);
+
   
 
   return (
     <Drawer
       screenOptions={{
-        headerTitle: 'SuperAdmin',
+        headerTitle: superadminName ? `Welcome ${superadminName}` : "Welcome Cook",
         drawerActiveTintColor: '#7A4F01',
         drawerActiveBackgroundColor: 'rgba(255,193,7,0.12)',
       }}
