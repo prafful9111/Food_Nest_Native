@@ -367,7 +367,7 @@ export default function FoodItems() {
   // Load the "Cook Status" list on mount and poll every 10s
   useEffect(() => {
     loadMyRequests();
-    const t = setInterval(loadMyRequests, 10000);
+    const t = setInterval(loadMyRequests, 1000000);
     return () => clearInterval(t);
   }, []);
 

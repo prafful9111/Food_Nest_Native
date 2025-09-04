@@ -1,10 +1,12 @@
 import { Drawer } from "expo-router/drawer";
 import { useRouter } from "expo-router";
 import { getUser, onAuthChange, signOut } from "@/lib/authStore";
-import { useEffect } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { StyleSheet, View, Text } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 // Small gradient icon wrapper (yellow food theme) — same vibe as SuperAdmin
 function GradientIcon({
@@ -27,8 +29,71 @@ function GradientIcon({
   );
 }
 
+// ===== API + helpers for polling request count =====
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://192.168.29.87:1900";
+const SEEN_COUNT_KEY = "cook_prep_seen_count";
+
+type HeadersDict = Record<string, string>;
+
+async function buildAuthHeaders(): Promise<HeadersDict> {
+  const token =
+    (await AsyncStorage.getItem("token")) ||
+    (await AsyncStorage.getItem("accessToken"));
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+async function apiGet<T>(path: string): Promise<T> {
+  const headers = new Headers(await buildAuthHeaders());
+  const r = await fetch(`${API_URL}${path}`, { headers });
+  if (!r.ok) throw new Error(await r.text());
+  return (await r.json()) as T;
+}
+async function getCookId(): Promise<string> {
+  const byKey = (await AsyncStorage.getItem("userId")) || "";
+  if (byKey) return byKey;
+  try {
+    const user = JSON.parse((await AsyncStorage.getItem("user")) || "{}");
+    return user?._id || user?.id || "";
+  } catch {
+    return "";
+  }
+}
+
+/** Returns number of active (not picked) prep-requests for this cook */
+async function fetchActivePrepCount(): Promise<number> {
+  const cookId = await getCookId();
+  if (!cookId) return 0;
+  // You can refine the filter on backend; here we fetch for the cook and count all not 'picked'
+  const rows = await apiGet<any[]>(`/api/prep-requests?cookId=${encodeURIComponent(cookId)}`);
+  return rows.filter(r => r.status !== "picked").length;
+}
+
+
 export default function CookLayout() {
   const router = useRouter();
+  const [activeCount, setActiveCount] = useState(0);
+  const [seenCount, setSeenCount] = useState(0);
+
+  const loadSeen = useCallback(async () => {
+    const v = await AsyncStorage.getItem(SEEN_COUNT_KEY);
+    setSeenCount(v ? Number(v) : 0);
+  }, []);
+
+  const pollCount = useCallback(async () => {
+    try {
+      const n = await fetchActivePrepCount();
+      setActiveCount(n);
+    } catch (e) {
+      // silent fail, keep last count
+    }
+  }, []);
+
+  const markAllSeen = useCallback(async () => {
+    await AsyncStorage.setItem(SEEN_COUNT_KEY, String(activeCount));
+    setSeenCount(activeCount);
+  }, [activeCount]);
+
+  const hasNew = activeCount > seenCount;
+
 
   // Keep your original auth guard & role check (cook only)
   useEffect(() => {
@@ -41,6 +106,19 @@ export default function CookLayout() {
     check();
     return un;
   }, [router]);
+
+  // load baseline seen count once
+useEffect(() => {
+  loadSeen();
+}, [loadSeen]);
+
+// poll server for current active requests
+useEffect(() => {
+  pollCount();
+  const t = setInterval(pollCount, 10000); // every 10s
+  return () => clearInterval(t);
+}, [pollCount]);
+
 
   const handleSignOut = () => {
     signOut();
@@ -67,7 +145,19 @@ export default function CookLayout() {
         name="MyMenu"
         options={{
           title: "My Menu",
-          drawerIcon: ({ size }) => <GradientIcon name="book-open" size={size ?? 24} />,
+          drawerIcon: ({ size }) => (
+            <View style={styles.iconContainer}>
+              <GradientIcon name="book-open" size={size ?? 24} />
+              {hasNew ? <View style={styles.countBadge} /> : null}
+            </View>
+          ),
+          
+        }}
+        listeners={{
+          focus: () => {
+            // user has viewed My Menu; mark current active as seen
+            markAllSeen();
+          },
         }}
       />
       <Drawer.Screen
