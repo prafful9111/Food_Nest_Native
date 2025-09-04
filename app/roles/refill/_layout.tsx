@@ -4,6 +4,9 @@ import { signOut } from "@/lib/authStore";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { StyleSheet } from "react-native";
+import { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 function GradientIcon({
   name,
@@ -33,10 +36,28 @@ export default function RefillCoordinatorLayout() {
     router.replace("/(auth)/login");
   };
 
+
+  const [refillcoordinatorName, setrefillcoordinatorName] = useState<string>("");
+
+useEffect(() => {
+  (async () => {
+    try {
+      const raw = await AsyncStorage.getItem("user");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setrefillcoordinatorName(parsed?.name || parsed?.email || "");
+      }
+    } catch {
+      setrefillcoordinatorName("");
+    }
+  })();
+}, []);
+
+
   return (
     <Drawer
       screenOptions={{
-        headerTitle: "Refill Coordinator",
+        headerTitle: refillcoordinatorName ? `Welcome ${refillcoordinatorName}` : "Welcome Cook",
         drawerActiveTintColor: "#7A4F01",
         drawerActiveBackgroundColor: "rgba(255,193,7,0.12)",
       }}
