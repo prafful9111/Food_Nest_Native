@@ -4,6 +4,9 @@ import { signOut } from "@/lib/authStore";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { StyleSheet } from "react-native";
+import { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 function GradientIcon({
   name,
@@ -33,10 +36,27 @@ export default function SupervisorLayout() {
     router.replace("/(auth)/login");
   };
 
+  const [supervisorName, setsupervisorName] = useState<string>("");
+
+useEffect(() => {
+  (async () => {
+    try {
+      const raw = await AsyncStorage.getItem("user");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setsupervisorName(parsed?.name || parsed?.email || "");
+      }
+    } catch {
+      setsupervisorName("");
+    }
+  })();
+}, []);
+
+
   return (
     <Drawer
       screenOptions={{
-        headerTitle: "Supervisor",
+        headerTitle: supervisorName ? `Welcome ${supervisorName}` : "Welcome Cook",
         drawerActiveTintColor: "#7A4F01",
         drawerActiveBackgroundColor: "rgba(255,193,7,0.12)",
       }}
