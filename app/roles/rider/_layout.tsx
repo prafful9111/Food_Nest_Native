@@ -4,6 +4,8 @@ import { signOut } from "@/lib/authStore";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { StyleSheet } from "react-native";
+import { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 function GradientIcon({
   name,
@@ -25,6 +27,9 @@ function GradientIcon({
   );
 }
 
+
+
+
 export default function RiderLayout() {
   const router = useRouter();
 
@@ -33,10 +38,27 @@ export default function RiderLayout() {
     router.replace("/(auth)/login");
   };
 
+  const [riderName, setRiderName] = useState<string>("");
+
+useEffect(() => {
+  (async () => {
+    try {
+      const raw = await AsyncStorage.getItem("user");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setRiderName(parsed?.name || parsed?.email || "");
+      }
+    } catch {
+      setRiderName("");
+    }
+  })();
+}, []);
+
   return (
     <Drawer
       screenOptions={{
-        headerTitle: "Rider",
+        headerTitle: riderName ? `Welcome ${riderName}` : "Welcome Cook",
+
         drawerActiveTintColor: "#7A4F01",
         drawerActiveBackgroundColor: "rgba(255,193,7,0.12)",
       }}
