@@ -51,6 +51,30 @@ type Item = {
 };
 type Cook = { _id: string; name?: string; email?: string };
 
+// --- Cook Status list types ---
+type ApiStatus = 'queued' | 'processing' | 'ready' | 'picked';
+type UiStatus = 'Processing' | 'Ready' | 'Picked';
+
+function apiToUiStatus(s: ApiStatus): UiStatus {
+  if (s === 'ready') return 'Ready';
+  if (s === 'picked') return 'Picked';
+  return 'Processing'; // queued/processing -> Processing
+}
+
+type PrepReq = {
+  _id: string;
+  status: ApiStatus;
+  quantityToPrepare?: number;
+  cookId?: string;
+  createdBy?: string;
+  foodSnapshot?: {
+    name?: string;
+    perServing?: { amount?: number; unit?: string };
+    imageUrl?: string | null;
+    rawMaterials?: Array<{ name: string; qty?: number; unit?: string }>;
+  };
+  cook?: { _id: string; name?: string; email?: string };
+};
 
 const toINR = (thb: number) => Math.round(thb * 2.5);
 
@@ -61,9 +85,11 @@ export default function FoodItems() {
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState<Item | null>(null);
   const [cooks, setCooks] = useState<Cook[]>([]);
-const [chosen, setChosen] = useState<Record<string, string>>({});   // foodId -> cookId
-const [sending, setSending] = useState<Record<string, boolean>>({}); // foodId -> loading
-
+  const [chosen, setChosen] = useState<Record<string, string>>({}); // foodId -> cookId
+  const [sending, setSending] = useState<Record<string, boolean>>({}); // foodId -> loading
+  // Cook Status section
+  const [myRequests, setMyRequests] = useState<PrepReq[]>([]);
+  const [reqLoading, setReqLoading] = useState(false);
 
   // form state
   const [name, setName] = useState('');
@@ -85,9 +111,9 @@ const [sending, setSending] = useState<Record<string, boolean>>({}); // foodId -
   >([{ name: '', qty: '', unit: '' }]);
 
   // NEW: quantities (amounts as strings for inputs)
-  const [totalQty, setTotalQty] = useState<string>('');       // amount
-  const [totalUnit, setTotalUnit] = useState<string>('');     // unit
-  const [perServQty, setPerServQty] = useState<string>('');   // amount
+  const [totalQty, setTotalQty] = useState<string>(''); // amount
+  const [totalUnit, setTotalUnit] = useState<string>(''); // unit
+  const [perServQty, setPerServQty] = useState<string>(''); // amount
   const [perServUnit, setPerServUnit] = useState<string>(''); // unit
 
   function addRawMaterialRow() {
@@ -194,48 +220,85 @@ const [sending, setSending] = useState<Record<string, boolean>>({}); // foodId -
     }
   };
 
+  // ===== Current user id (supervisor) for filtering requests =====
+  async function getUserId(): Promise<string> {
+    // first try a simple key
+    const byKey = (await AsyncStorage.getItem('userId')) || '';
+    if (byKey) return byKey;
+
+    // fallback to stored user object
+    try {
+      const user = JSON.parse((await AsyncStorage.getItem('user')) || '{}');
+      return user?._id || user?.id || '';
+    } catch {
+      return '';
+    }
+  }
+
   // ===== API helpers =====
-  
-// Always return a clean string-to-string map (no undefined values)
-type HeadersDict = Record<string, string>;
 
-async function buildAuthHeaders(): Promise<HeadersDict> {
-  const token = await AsyncStorage.getItem('token'); // <-- if you saved as 'accessToken', change this key
-  if (!token) return {};
-  return { Authorization: `Bearer ${token}` };
-}
+  // Always return a clean string-to-string map (no undefined values)
+  type HeadersDict = Record<string, string>;
 
-async function apiGet<T>(path: string): Promise<T> {
-  // Build a real Headers object to satisfy TS + fetch
-  const auth = await buildAuthHeaders();
-  const headers = new Headers(auth);
+  async function buildAuthHeaders(): Promise<HeadersDict> {
+    const token = await AsyncStorage.getItem('token'); // <-- if you saved as 'accessToken', change this key
+    if (!token) return {};
+    return { Authorization: `Bearer ${token}` };
+  }
 
-  const r = await fetch(`${API_URL}${path}`, { headers });
-  if (!r.ok) throw new Error(await r.text());
-  return (await r.json()) as T;
-}
+  async function apiGet<T>(path: string): Promise<T> {
+    // Build a real Headers object to satisfy TS + fetch
+    const auth = await buildAuthHeaders();
+    const headers = new Headers(auth);
 
-async function apiSend<T>(
-  path: string,
-  method: string,
-  body: any,
-  isForm = false
-): Promise<T> {
-  const auth = await buildAuthHeaders();
-  const headers = new Headers(auth);
+    const r = await fetch(`${API_URL}${path}`, { headers });
+    if (!r.ok) throw new Error(await r.text());
+    return (await r.json()) as T;
+  }
 
-  // For JSON requests, set the content-type; for form-data, let fetch set it (boundary)
-  if (!isForm) headers.set('Content-Type', 'application/json');
+  async function apiSend<T>(
+    path: string,
+    method: string,
+    body: any,
+    isForm = false
+  ): Promise<T> {
+    const auth = await buildAuthHeaders();
+    const headers = new Headers(auth);
 
-  const r = await fetch(`${API_URL}${path}`, {
-    method,
-    headers,
-    body: isForm ? body : JSON.stringify(body),
-  });
-  if (!r.ok) throw new Error(await r.text());
-  return (await r.json()) as T;
-}
-  
+    // For JSON requests, set the content-type; for form-data, let fetch set it (boundary)
+    if (!isForm) headers.set('Content-Type', 'application/json');
+
+    const r = await fetch(`${API_URL}${path}`, {
+      method,
+      headers,
+      body: isForm ? body : JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    return (await r.json()) as T;
+  }
+
+  // ===== Load my created prep-requests for "Cook Status" =====
+  async function loadMyRequests() {
+    setReqLoading(true);
+    try {
+      const me = await getUserId();
+      if (!me) {
+        setMyRequests([]);
+        return;
+      }
+      // Prefer server-side filter by creator:
+      // GET /api/prep-requests?createdBy=<me>
+      const rows = await apiGet<PrepReq[]>(
+        `/api/prep-requests?createdBy=${encodeURIComponent(me)}`
+      );
+      setMyRequests(rows);
+    } catch (e) {
+      console.warn('loadMyRequests failed', e);
+      setMyRequests([]);
+    } finally {
+      setReqLoading(false);
+    }
+  }
 
   // ===== Load items from backend =====
   const load = async () => {
@@ -300,7 +363,13 @@ async function apiSend<T>(
       }
     })();
   }, []);
-  
+
+  // Load the "Cook Status" list on mount and poll every 10s
+  useEffect(() => {
+    loadMyRequests();
+    const t = setInterval(loadMyRequests, 10000);
+    return () => clearInterval(t);
+  }, []);
 
   // ===== Build a robust RN file part =====
   function toFilePart(p: {
@@ -441,7 +510,9 @@ async function apiSend<T>(
             available,
             // NEW
             rawMaterials: cleanRawMaterials,
-            ...(totalQuantityPayload ? { totalQuantity: totalQuantityPayload } : {}),
+            ...(totalQuantityPayload
+              ? { totalQuantity: totalQuantityPayload }
+              : {}),
             ...(perServingPayload ? { perServing: perServingPayload } : {}),
           });
         }
@@ -491,31 +562,32 @@ async function apiSend<T>(
   };
 
   // ===== Assign to cook =====
-const setChoice = (foodId: string, cookId: string) =>
-  setChosen(prev => ({ ...prev, [foodId]: cookId }));
+  const setChoice = (foodId: string, cookId: string) =>
+    setChosen((prev) => ({ ...prev, [foodId]: cookId }));
 
-async function sendPrepRequest(food: Item) {
-  const cookId = chosen[food._id];
-  if (!cookId) {
-    Alert.alert('Pick a cook first');
-    return;
+  async function sendPrepRequest(food: Item) {
+    const cookId = chosen[food._id];
+    if (!cookId) {
+      Alert.alert('Pick a cook first');
+      return;
+    }
+    setSending((s) => ({ ...s, [food._id]: true }));
+    try {
+      await apiSend('/api/prep-requests', 'POST', {
+        foodId: food._id,
+        cookId,
+        // if you want to pass a quantity, use your existing field; otherwise 0:
+        quantityToPrepare: food.totalQuantity?.amount ?? 0,
+      });
+      Alert.alert('Sent', 'Request forwarded to cook');
+      // Immediately refresh the Cook Status section so this shows up
+      await loadMyRequests();
+    } catch (e: any) {
+      Alert.alert('Failed', e?.message || 'Could not send');
+    } finally {
+      setSending((s) => ({ ...s, [food._id]: false }));
+    }
   }
-  setSending(s => ({ ...s, [food._id]: true }));
-  try {
-    await apiSend('/api/prep-requests', 'POST', {
-      foodId: food._id,
-      cookId,
-      // if you want to pass a quantity, use your existing field; otherwise 0:
-      quantityToPrepare: food.totalQuantity?.amount ?? 0
-    });
-    Alert.alert('Sent', 'Request forwarded to cook');
-  } catch (e: any) {
-    Alert.alert('Failed', e?.message || 'Could not send');
-  } finally {
-    setSending(s => ({ ...s, [food._id]: false }));
-  }
-}
-
 
   // 2-column card layout
 
@@ -529,6 +601,13 @@ async function sendPrepRequest(food: Item) {
           <Text style={styles.muted}>
             Set raw material quantity & assign chefs
           </Text>
+          <Pressable
+      onPress={loadMyRequests}
+      style={[styles.iconBtn, { alignSelf: 'flex-start', marginTop: 6 }]}
+    >
+      <Text style={{ fontWeight: '700' }}>Refresh Cook Status</Text>
+    </Pressable>
+
 
           <Pressable
             onPress={openAdd}
@@ -670,48 +749,160 @@ async function sendPrepRequest(food: Item) {
                   </View>
                 </View>
                 {/* Assign to Cook */}
-<View style={{ marginTop: 10, gap: 8 }}>
-  <Text style={{ fontSize: 12, color: '#374151' }}>Assign cook</Text>
+                <View style={{ marginTop: 10, gap: 8 }}>
+                  <Text style={{ fontSize: 12, color: '#374151' }}>
+                    Assign cook
+                  </Text>
 
-  {/* horizontal chips as a simple dropdown substitute */}
-  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-    {cooks.map(c => (
-      <Pressable
-        key={c._id}
-        onPress={() => setChoice(item._id, c._id)}
-        style={[
-          { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, borderWidth: 1, borderColor: '#e5e7eb' },
-          chosen[item._id] === c._id && { backgroundColor: '#111827' }
-        ]}
-      >
-        <Text
-          style={[
-            { fontSize: 12, fontWeight: '700', color: '#374151' },
-            chosen[item._id] === c._id && { color: '#fff' }
-          ]}
-        >
-          {c.name || c.email}
-        </Text>
-      </Pressable>
-    ))}
-  </ScrollView>
+                  {/* horizontal chips as a simple dropdown substitute */}
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 8 }}
+                  >
+                    {cooks.map((c) => (
+                      <Pressable
+                        key={c._id}
+                        onPress={() => setChoice(item._id, c._id)}
+                        style={[
+                          {
+                            paddingVertical: 6,
+                            paddingHorizontal: 10,
+                            borderRadius: 8,
+                            borderWidth: 1,
+                            borderColor: '#e5e7eb',
+                          },
+                          chosen[item._id] === c._id && {
+                            backgroundColor: '#111827',
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            {
+                              fontSize: 12,
+                              fontWeight: '700',
+                              color: '#374151',
+                            },
+                            chosen[item._id] === c._id && { color: '#fff' },
+                          ]}
+                        >
+                          {c.name || c.email}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </ScrollView>
 
-  <Pressable
-    onPress={() => sendPrepRequest(item)}
-    style={[styles.iconBtn, { alignSelf: 'flex-start', backgroundColor: '#111827', borderColor: '#111827' }]}
-    disabled={!!sending[item._id]}
-  >
-    {sending[item._id] ? (
-      <ActivityIndicator color="#fff" />
-    ) : (
-      <Text style={{ color: '#fff', fontWeight: '700' }}>Send</Text>
-    )}
-  </Pressable>
-</View>
-
+                  <Pressable
+                    onPress={() => sendPrepRequest(item)}
+                    style={[
+                      styles.iconBtn,
+                      {
+                        alignSelf: 'flex-start',
+                        backgroundColor: '#111827',
+                        borderColor: '#111827',
+                      },
+                    ]}
+                    disabled={!!sending[item._id]}
+                  >
+                    {sending[item._id] ? (
+                      <ActivityIndicator color='#fff' />
+                    ) : (
+                      <Text style={{ color: '#fff', fontWeight: '700' }}>
+                        Send
+                      </Text>
+                    )}
+                  </Pressable>
+                </View>
               </View>
             </View>
           ))}
+          {/* ---------- Cook Status (requests sent by this supervisor) ---------- */}
+<View style={{ marginTop: 14, gap: 10 }}>
+  <Text style={{ fontSize: 18, fontWeight: '700' }}>Cook Status</Text>
+
+  {reqLoading && myRequests.length === 0 ? (
+    <View style={{ paddingVertical: 20 }}>
+      <ActivityIndicator />
+    </View>
+  ) : myRequests.length === 0 ? (
+    <Text style={{ color: '#6b7280' }}>
+      No requests sent yet. Assign a cook to see updates here.
+    </Text>
+  ) : (
+    myRequests.map(req => {
+      const ui: UiStatus = apiToUiStatus(req.status);
+      const cookObj = cooks.find(c => c._id === req.cookId);
+      const cookLabel = cookObj?.name || cookObj?.email || `Cook ${req.cookId ?? ''}`;
+      
+      return (
+        <View
+          key={req._id}
+          style={{
+            backgroundColor: 'white',
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: '#e5e7eb',
+            padding: 12,
+            gap: 8
+          }}
+        >
+          {/* Top row: food name + status pill */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ fontSize: 16, fontWeight: '700' }}>
+              {req.foodSnapshot?.name ?? 'Item'}
+            </Text>
+
+            <View
+              style={{
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 999,
+                backgroundColor:
+                  ui === 'Ready' ? '#DCFCE7' :
+                  ui === 'Picked' ? '#E0E7FF' : '#FEF3C7'
+              }}
+            >
+              <Text style={{
+                fontSize: 12,
+                fontWeight: '800',
+                color:
+                  ui === 'Ready' ? '#166534' :
+                  ui === 'Picked' ? '#3730A3' : '#92400E'
+              }}>
+                {ui === 'Processing' ? 'Start preparing' : ui}
+              </Text>
+            </View>
+          </View>
+
+          {/* Cook + qty */}
+          <Text style={{ color: '#374151' }}>
+            Cook: <Text style={{ fontWeight: '700' }}>{cookLabel}</Text>
+            {typeof req.quantityToPrepare === 'number' ? `  •  Qty: ${req.quantityToPrepare}` : ''}
+          </Text>
+
+          {/* Per-serving + materials (compact) */}
+          {req.foodSnapshot?.perServing?.amount != null && (
+            <Text style={{ color: '#6b7280' }}>
+              Per serving: {req.foodSnapshot.perServing.amount}
+              {req.foodSnapshot.perServing.unit ? ` ${req.foodSnapshot.perServing.unit}` : ''}
+            </Text>
+          )}
+
+          {Array.isArray(req.foodSnapshot?.rawMaterials) &&
+            req.foodSnapshot!.rawMaterials!.length > 0 && (
+            <Text style={{ color: '#6b7280' }} numberOfLines={2}>
+              Materials: {req.foodSnapshot!.rawMaterials!
+                .map(r => `${r.name}${r.qty != null ? ` (${r.qty}${r.unit ? ' '+r.unit : ''})` : ''}`)
+                .join(', ')}
+            </Text>
+          )}
+        </View>
+      );
+    })
+  )}
+</View>
+
         </View>
       )}
 
@@ -886,8 +1077,8 @@ async function sendPrepRequest(food: Item) {
                     <Text style={styles.label}>Total Quantity</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g., 5"
-                      keyboardType="decimal-pad"
+                      placeholder='e.g., 5'
+                      keyboardType='decimal-pad'
                       value={totalQty}
                       onChangeText={setTotalQty}
                     />
@@ -896,7 +1087,7 @@ async function sendPrepRequest(food: Item) {
                     <Text style={styles.label}>Unit</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g., kg, g, L, ml, pcs"
+                      placeholder='e.g., kg, g, L, ml, pcs'
                       value={totalUnit}
                       onChangeText={setTotalUnit}
                     />
@@ -909,8 +1100,8 @@ async function sendPrepRequest(food: Item) {
                     <Text style={styles.label}>Per Serving Quantity</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g., 0.15"
-                      keyboardType="decimal-pad"
+                      placeholder='e.g., 0.15'
+                      keyboardType='decimal-pad'
                       value={perServQty}
                       onChangeText={setPerServQty}
                     />
@@ -919,7 +1110,7 @@ async function sendPrepRequest(food: Item) {
                     <Text style={styles.label}>Unit</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="e.g., kg, g, L, ml, pcs"
+                      placeholder='e.g., kg, g, L, ml, pcs'
                       value={perServUnit}
                       onChangeText={setPerServUnit}
                     />
@@ -999,7 +1190,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   h1: { fontSize: 24, fontWeight: '700' },
-  muted: { color: '#6b7280', paddingTop: 6 }  ,
+  muted: { color: '#6b7280', paddingTop: 6 },
 
   addBtn: {
     flexDirection: 'row',
@@ -1215,5 +1406,4 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginTop: 5,
   },
-  
 });
