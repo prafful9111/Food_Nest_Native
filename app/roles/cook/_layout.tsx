@@ -94,6 +94,20 @@ export default function CookLayout() {
 
   const hasNew = activeCount > seenCount;
 
+  const [cookName, setCookName] = useState<string>("");
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem("user");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          setCookName(parsed?.name || parsed?.email || "");
+        }
+      } catch {
+        setCookName("");
+      }
+    })();
+  }, []);
 
   // Keep your original auth guard & role check (cook only)
   useEffect(() => {
@@ -128,7 +142,8 @@ useEffect(() => {
   return (
     <Drawer
       screenOptions={{
-        headerTitle: "Cook",
+        headerTitle: cookName ? `Welcome ${cookName}` : "Welcome Cook",
+
         drawerActiveTintColor: "#7A4F01",
         drawerActiveBackgroundColor: "rgba(255,193,7,0.12)",
       }}
