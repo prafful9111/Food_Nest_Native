@@ -51,6 +51,7 @@ type Item = {
 };
 type Cook = { _id: string; name?: string; email?: string };
 
+
 // --- Cook Status list types ---
 type ApiStatus = 'queued' | 'processing' | 'ready' | 'picked';
 type UiStatus = 'Processing' | 'Ready' | 'Picked';
@@ -61,20 +62,24 @@ function apiToUiStatus(s: ApiStatus): UiStatus {
   return 'Processing'; // queued/processing -> Processing
 }
 
+type UserMini = { _id: string; name?: string; email?: string };
+
 type PrepReq = {
   _id: string;
   status: ApiStatus;
   quantityToPrepare?: number;
-  cookId?: string;
-  createdBy?: string;
+  cookId?: string | UserMini;
+  createdBy?: string | UserMini;
+  createdAt?: string;
   foodSnapshot?: {
     name?: string;
     perServing?: { amount?: number; unit?: string };
     imageUrl?: string | null;
     rawMaterials?: Array<{ name: string; qty?: number; unit?: string }>;
   };
-  cook?: { _id: string; name?: string; email?: string };
+  cook?: UserMini;
 };
+
 
 const toINR = (thb: number) => Math.round(thb * 2.5);
 
@@ -832,8 +837,13 @@ export default function FoodItems() {
   ) : (
     myRequests.map(req => {
       const ui: UiStatus = apiToUiStatus(req.status);
-      const cookObj = cooks.find(c => c._id === req.cookId);
-      const cookLabel = cookObj?.name || cookObj?.email || `Cook ${req.cookId ?? ''}`;
+      const cookLabel =
+      typeof req.cookId === 'object'
+        ? req.cookId?.name || req.cookId?.email
+        : cooks.find(c => c._id === req.cookId)?.name ||
+          cooks.find(c => c._id === req.cookId)?.email ||
+          `Cook ${req.cookId ?? ''}`;
+    
       
       return (
         <View
@@ -880,6 +890,19 @@ export default function FoodItems() {
             Cook: <Text style={{ fontWeight: '700' }}>{cookLabel}</Text>
             {typeof req.quantityToPrepare === 'number' ? `  •  Qty: ${req.quantityToPrepare}` : ''}
           </Text>
+          {/* Requested by + time */}
+<Text style={{ color: '#6b7280' }}>
+  Requested by:{' '}
+  <Text style={{ fontWeight: '700', color: '#374151' }}>
+    {
+      typeof req.createdBy === 'object'
+        ? req.createdBy?.name || req.createdBy?.email
+        : req.createdBy || 'Supervisor'
+    }
+  </Text>
+  {req.createdAt ? `  •  ${new Date(req.createdAt).toLocaleString()}` : ''}
+</Text>
+
 
           {/* Per-serving + materials (compact) */}
           {req.foodSnapshot?.perServing?.amount != null && (
