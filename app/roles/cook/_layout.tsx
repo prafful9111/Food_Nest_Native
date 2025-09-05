@@ -182,6 +182,8 @@ useEffect(() => {
 }, [pollCount]);
 
 
+
+
   const handleSignOut = () => {
     signOut();
     router.replace("/(auth)/login");

@@ -1,16 +1,18 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import { signOut } from '@/lib/authStore';
 
-export default function ProfileScreen() {
+export default function CookProfileScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
+
   const [name, setName] = useState<string>('User');
   const [email, setEmail] = useState<string>('');
-  const [role, setRole] = useState<string>('SuperAdmin'); // static here; replace if you store role in user
+  const [role, setRole] = useState<string>('Cook'); // default to Cook
   const [joined, setJoined] = useState<string>('—');
 
   useEffect(() => {
@@ -21,19 +23,37 @@ export default function ProfileScreen() {
           const u = JSON.parse(raw);
           setName(u?.name || u?.email || 'User');
           setEmail(u?.email || '');
-          // If your backend stores role/joined date on user, fill here:
-          setRole(u?.role || 'SuperAdmin');
+          setRole(u?.role || 'Cook');
           setJoined(u?.joinedAt ? new Date(u.joinedAt).toDateString() : '—');
         }
-      } catch {}
+      } catch {
+        // ignore
+      }
     })();
   }, []);
 
-  const initials = (name || 'User')
-    .split(/\s+/)
-    .map((p: string) => p[0]?.toUpperCase())
-    .slice(0, 2)
-    .join('');
+  // Header back arrow → Cook Overview
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: 'Profile',
+      headerLeft: () => (
+        <Pressable
+          onPress={() => router.replace('/roles/cook/CookOverview')}
+          style={{ marginLeft: 12 }}
+          accessibilityLabel="Back to overview"
+        >
+          <Feather name="arrow-left" size={24} color="#000" />
+        </Pressable>
+      ),
+    });
+  }, [navigation, router]);
+
+  const initials = useMemo(() => {
+    const parts = (name || 'User').trim().split(/\s+/);
+    const a = parts[0]?.[0] || 'U';
+    const b = parts[1]?.[0] || '';
+    return (a + b).toUpperCase();
+  }, [name]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -69,15 +89,19 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Any other details you want */}
+      {/* Extra details area (edit as needed) */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>About</Text>
         <Text style={styles.sectionText}>
-          You are logged in as a {role}. From here you can manage users, items, routes, teams, vehicles, and view analytics.
+          You are logged in as a {role}. Manage your menu, prep status, rider requests,
+          specials, and kitchen helpers from the drawer.
         </Text>
       </View>
 
-      <Pressable onPress={handleSignOut} style={({ pressed }) => [styles.signOutBtn, pressed && { opacity: 0.85 }]}>
+      <Pressable
+        onPress={handleSignOut}
+        style={({ pressed }) => [styles.signOutBtn, pressed && { opacity: 0.85 }]}
+      >
         <Feather name="log-out" size={18} color="#fff" style={{ marginRight: 8 }} />
         <Text style={styles.signOutText}>Sign Out</Text>
       </Pressable>
