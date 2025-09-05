@@ -3,10 +3,14 @@ import { useRouter } from "expo-router";
 import { signOut } from "@/lib/authStore";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { StyleSheet } from "react-native";
-import { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  StyleSheet,
+  View,
+  Text,
+  Pressable,
+} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
 
 function GradientIcon({
   name,
@@ -31,37 +35,80 @@ function GradientIcon({
 export default function SupervisorLayout() {
   const router = useRouter();
 
+  const [supervisorName, setSupervisorName] = useState<string>("");
+  const [supervisorEmail, setSupervisorEmail] = useState<string>("");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem("user");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          setSupervisorName(parsed?.name || parsed?.email || "");
+          setSupervisorEmail(parsed?.email || "");
+        }
+      } catch {
+        setSupervisorName("");
+        setSupervisorEmail("");
+      }
+    })();
+  }, []);
+
+  const initials = useMemo(() => {
+    const base = (supervisorName || supervisorEmail || "User").trim();
+    const parts = base.split(/\s+/);
+    const a = parts[0]?.[0] || "U";
+    const b = parts[1]?.[0] || "";
+    return (a + b).toUpperCase();
+  }, [supervisorName, supervisorEmail]);
+
+  const HeaderTitle = () => (
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
+      <Pressable
+        onPress={() => router.push("/roles/supervisor/profile")}
+        style={{ marginRight: 10 }}
+        accessibilityLabel="Open profile"
+      >
+        <LinearGradient
+          colors={["#FFC107", "#FFA000"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.avatar}
+        >
+          <Text style={styles.avatarText}>{initials}</Text>
+        </LinearGradient>
+      </Pressable>
+
+      <Text style={styles.headerTitleText}>
+        {supervisorName ? `Welcome ${supervisorName}` : "Welcome Supervisor"}
+      </Text>
+    </View>
+  );
+
   const handleSignOut = () => {
     signOut();
     router.replace("/(auth)/login");
   };
 
-  const [supervisorName, setsupervisorName] = useState<string>("");
-
-useEffect(() => {
-  (async () => {
-    try {
-      const raw = await AsyncStorage.getItem("user");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setsupervisorName(parsed?.name || parsed?.email || "");
-      }
-    } catch {
-      setsupervisorName("");
-    }
-  })();
-}, []);
-
-
   return (
     <Drawer
       screenOptions={{
-        headerTitle: supervisorName ? `Welcome ${supervisorName}` : "Welcome Cook",
+        headerTitle: () => <HeaderTitle />,
+        headerTitleAlign: "left",
         drawerActiveTintColor: "#7A4F01",
         drawerActiveBackgroundColor: "rgba(255,193,7,0.12)",
       }}
     >
-      {/* Map file routes to drawer items with nice titles */}
+      {/* NEW: Profile entry in drawer */}
+      <Drawer.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          drawerIcon: ({ size }) => <GradientIcon name="user" size={size ?? 24} />,
+        }}
+      />
+
+      {/* Map file routes to drawer items */}
       <Drawer.Screen
         name="SupervisorOverview"
         options={{
@@ -69,16 +116,11 @@ useEffect(() => {
           drawerIcon: ({ size }) => <GradientIcon name="home" size={size ?? 24} />,
         }}
       />
-            <Drawer.Screen
-        name='food-items'
+      <Drawer.Screen
+        name="food-items"
         options={{
-          title: 'Food Items',
-          drawerIcon: ({ size }) => (
-            <GradientIcon
-              name='coffee'
-              size={size}
-            />
-          ),
+          title: "Food Items",
+          drawerIcon: ({ size }) => <GradientIcon name="coffee" size={size ?? 24} />,
         }}
       />
       <Drawer.Screen
@@ -116,40 +158,31 @@ useEffect(() => {
           drawerIcon: ({ size }) => <GradientIcon name="package" size={size ?? 24} />,
         }}
       />
-            <Drawer.Screen
-        name='vehicles-management'
+      <Drawer.Screen
+        name="vehicles-management"
         options={{
-          title: 'Vehicles Management',
-          drawerIcon: ({ size }) => (
-            <GradientIcon
-              name='truck'
-              size={size}
-            />
-          ),
+          title: "Vehicles Management",
+          drawerIcon: ({ size }) => <GradientIcon name="truck" size={size ?? 24} />,
         }}
       />
 
-<Drawer.Screen
+      {/* You had two similarly named request screens; keeping both, but consider merging */}
+      <Drawer.Screen
         name="RequestsManagement"
         options={{
           title: "Requests Management",
           drawerIcon: ({ size }) => <GradientIcon name="package" size={size ?? 24} />,
         }}
       />
-            <Drawer.Screen
-        name='Request-management'
+      <Drawer.Screen
+        name="Request-management"
         options={{
-          title: 'Requests Management',
-          drawerIcon: ({ size }) => (
-            <GradientIcon
-              name='bell'
-              size={size}
-            />
-          ),
+          title: "Requests Management",
+          drawerIcon: ({ size }) => <GradientIcon name="bell" size={size ?? 24} />,
         }}
       />
 
-      {/* Custom Signout Button */}
+      {/* Sign Out (you can remove this if Profile has Sign Out) */}
       <Drawer.Screen
         name="signout"
         options={{
@@ -158,9 +191,7 @@ useEffect(() => {
           drawerIcon: ({ size }) => <GradientIcon name="log-out" size={size ?? 24} />,
         }}
         listeners={{
-          focus: () => {
-            // This will be handled by the custom component
-          },
+          focus: handleSignOut,
         }}
       />
     </Drawer>
@@ -176,5 +207,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
+  },
+  avatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 4,
+  },
+  avatarText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+  headerTitleText: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#1f2937",
   },
 });
