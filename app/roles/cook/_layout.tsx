@@ -6,6 +6,9 @@ import { StyleSheet, View, Text } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Pressable } from "react-native";
+import { useMemo } from "react";
+import { Link } from "expo-router"; // optional
 
 
 // Small gradient icon wrapper (yellow food theme) — same vibe as SuperAdmin
@@ -95,6 +98,8 @@ export default function CookLayout() {
   const hasNew = activeCount > seenCount;
 
   const [cookName, setCookName] = useState<string>("");
+  const [cookEmail, setCookEmail] = useState<string>("");
+
   useEffect(() => {
     (async () => {
       try {
@@ -102,12 +107,55 @@ export default function CookLayout() {
         if (raw) {
           const parsed = JSON.parse(raw);
           setCookName(parsed?.name || parsed?.email || "");
+          setCookEmail(parsed?.email || "");
         }
       } catch {
         setCookName("");
+        setCookEmail("");
       }
     })();
   }, []);
+
+
+
+  const initials = useMemo(() => {
+    const base = (cookName || cookEmail || "User").trim();
+    const parts = base.split(/\s+/);
+    const first = parts[0]?.[0] || "U";
+    const second = parts[1]?.[0] || "";
+    return (first + second).toUpperCase();
+  }, [cookName, cookEmail]);
+  
+  const HeaderTitle = () => (
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
+      <Pressable
+        onPress={() => router.push("/roles/cook/profile")}
+        style={{ marginRight: 10 }}
+        accessibilityLabel="Open profile"
+      >
+        <LinearGradient
+          colors={["#FFC107", "#FFA000"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: 17,
+            alignItems: "center",
+            justifyContent: "center",
+            elevation: 4,
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "700" }}>{initials}</Text>
+        </LinearGradient>
+      </Pressable>
+  
+      <Text style={{ fontSize: 17, fontWeight: "700", color: "#1f2937" }}>
+        {cookName ? `Welcome ${cookName}` : "Welcome Cook"}
+      </Text>
+    </View>
+  );
+
 
   // Keep your original auth guard & role check (cook only)
   useEffect(() => {
@@ -141,21 +189,29 @@ useEffect(() => {
 
   return (
     <Drawer
-      screenOptions={{
-        headerTitle: cookName ? `Welcome ${cookName}` : "Welcome Cook",
-
-        drawerActiveTintColor: "#7A4F01",
-        drawerActiveBackgroundColor: "rgba(255,193,7,0.12)",
+    screenOptions={{
+      headerTitle: () => <HeaderTitle />, // << use custom header
+      headerTitleAlign: "left",
+      drawerActiveTintColor: "#7A4F01",
+      drawerActiveBackgroundColor: "rgba(255,193,7,0.12)",
+    }}
+  >
+    {/* NEW: Profile in drawer, place wherever you like */}
+    <Drawer.Screen
+      name="profile"
+      options={{
+        title: "Profile",
+        drawerIcon: ({ size }) => <GradientIcon name="user" size={size ?? 24} />,
       }}
-    >
-      {/* Map file routes to drawer items with nice titles */}
-      <Drawer.Screen
-        name="CookOverview"
-        options={{
-          title: "Cook Overview",
-          drawerIcon: ({ size }) => <GradientIcon name="home" size={size ?? 24} />,
-        }}
-      />
+    />
+
+    <Drawer.Screen
+      name="CookOverview"
+      options={{
+        title: "Cook Overview",
+        drawerIcon: ({ size }) => <GradientIcon name="home" size={size ?? 24} />,
+      }}
+    />
       <Drawer.Screen
         name="MyMenu"
         options={{
