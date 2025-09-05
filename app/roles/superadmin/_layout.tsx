@@ -2,15 +2,15 @@ import { Drawer } from 'expo-router/drawer';
 import { useRouter } from 'expo-router';
 import { signOut } from '@/lib/authStore';
 import { Feather } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { View, StyleSheet, Text, Pressable, Image } from 'react-native';
 import { api } from '@/lib/api';
-import { LinearGradient } from 'expo-linear-gradient'; // NEW
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Small gradient icon wrapper (yellow food theme)
 function GradientIcon({ name, size = 24 }: { name: any; size?: number }) {
-  const box = size + 12; // a bit of padding around the icon
+  const box = size + 12;
   return (
     <LinearGradient
       colors={['#FFE082', '#FFC107', '#FFA000']}
@@ -30,14 +30,15 @@ function GradientIcon({ name, size = 24 }: { name: any; size?: number }) {
   );
 }
 
-
-
 export default function SuperAdminLayout() {
   const router = useRouter();
   const [pendingRequests, setPendingRequests] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [superadminName, setSuperadminName] = useState<string>('');
+  const [userEmail, setUserEmail] = useState<string>('');
 
   const handleSignOut = () => {
+    // (kept for backward compatibility if you keep the drawer Sign Out item)
     signOut();
     router.replace('/(auth)/login');
   };
@@ -63,32 +64,78 @@ export default function SuperAdminLayout() {
     return () => clearInterval(id);
   }, []);
 
-  const [superadminName, setsuperadminName] = useState<string>("");
-
-useEffect(() => {
-  (async () => {
-    try {
-      const raw = await AsyncStorage.getItem("user");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setsuperadminName(parsed?.name || parsed?.email || "");
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem('user');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          setSuperadminName(parsed?.name || parsed?.email || '');
+          setUserEmail(parsed?.email || '');
+        }
+      } catch {
+        setSuperadminName('');
+        setUserEmail('');
       }
-    } catch {
-      setsuperadminName("");
-    }
-  })();
-}, []);
+    })();
+  }, []);
 
-  
+  // Build initials for avatar fallback
+  const initials = useMemo(() => {
+    const n = (superadminName || userEmail || 'User').trim();
+    const parts = n.split(/\s+/);
+    return (
+      (parts[0]?.[0] || 'U').toUpperCase() + (parts[1]?.[0] || '').toUpperCase()
+    );
+  }, [superadminName, userEmail]);
+
+  // Custom header with round profile button + title
+  const HeaderTitle = () => (
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <Pressable
+        onPress={() => router.push('/roles/superadmin/profile')}
+        style={{ marginRight: 10 }}
+        accessibilityLabel='Open profile'
+      >
+        {/* Avatar: try user image if you have it later; for now a gradient with initials */}
+        <LinearGradient
+          colors={['#FFC107', '#FFA000']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.avatar}
+        >
+          <Text style={styles.avatarText}>{initials}</Text>
+        </LinearGradient>
+      </Pressable>
+
+      <Text style={styles.headerTitleText}>
+        {superadminName ? `Welcome ${superadminName}` : 'Welcome SuperAdmin'}
+      </Text>
+    </View>
+  );
 
   return (
     <Drawer
       screenOptions={{
-        headerTitle: superadminName ? `Welcome ${superadminName}` : "Welcome Cook",
+        headerTitle: () => <HeaderTitle />,
+        headerTitleAlign: 'left',
         drawerActiveTintColor: '#7A4F01',
         drawerActiveBackgroundColor: 'rgba(255,193,7,0.12)',
       }}
     >
+
+<Drawer.Screen
+        name='profile'
+        options={{
+          title: 'Profile',
+          drawerIcon: ({ size }) => (
+            <GradientIcon
+              name='user'
+              size={size}
+            />
+          ),
+        }}
+      />
       <Drawer.Screen
         name='overview'
         options={{
@@ -122,11 +169,7 @@ useEffect(() => {
             </View>
           ),
         }}
-        listeners={{
-          focus: () => {
-            refreshPendingCount();
-          },
-        }}
+        listeners={{ focus: () => refreshPendingCount() }}
       />
 
       <Drawer.Screen
@@ -213,19 +256,20 @@ useEffect(() => {
           ),
         }}
       />
+      <Drawer.Screen
+        name='misc-expenses'
+        options={{
+          title: 'Expenses',
+          drawerLabel: 'Expenses',
+          drawerIcon: ({ size }) => (
+            <GradientIcon
+              name='credit-card'
+              size={size}
+            />
+          ),
+        }}
+      />
 
-<Drawer.Screen
-
-  name="misc-expenses"
-
-  options={{
-    title: "Expenses",          // header title
-    drawerLabel: "Expenses",    // drawer item label
-    drawerIcon: ({ size }) => (
-      <GradientIcon name="credit-card" size={size} />
-    ),
-  }}
-/>
 
       <Drawer.Screen
         name='signout'
@@ -239,21 +283,11 @@ useEffect(() => {
             />
           ),
         }}
-        listeners={{
-          focus: () => {
-            // handled elsewhere if needed
-          },
-        }}
+        listeners={{ focus: handleSignOut }}
       />
 
 
-
-
-      
     </Drawer>
-
-    
-    
   );
 }
 
@@ -269,17 +303,6 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     position: 'relative',
-  },
-  notificationDot: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#ef4444',
-    borderWidth: 1,
-    borderColor: '#fff',
   },
   countBadge: {
     position: 'absolute',
@@ -299,5 +322,22 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 10,
     fontWeight: 'bold',
+  },
+  avatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+  },
+  avatarText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  headerTitleText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1f2937',
   },
 });

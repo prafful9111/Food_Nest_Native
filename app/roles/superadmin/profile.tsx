@@ -1,0 +1,178 @@
+import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { useEffect, useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Feather } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
+import { signOut } from '@/lib/authStore';
+
+export default function ProfileScreen() {
+  const router = useRouter();
+  const [name, setName] = useState<string>('User');
+  const [email, setEmail] = useState<string>('');
+  const [role, setRole] = useState<string>('SuperAdmin'); // static here; replace if you store role in user
+  const [joined, setJoined] = useState<string>('—');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem('user');
+        if (raw) {
+          const u = JSON.parse(raw);
+          setName(u?.name || u?.email || 'User');
+          setEmail(u?.email || '');
+          // If your backend stores role/joined date on user, fill here:
+          setRole(u?.role || 'SuperAdmin');
+          setJoined(u?.joinedAt ? new Date(u.joinedAt).toDateString() : '—');
+        }
+      } catch {}
+    })();
+  }, []);
+
+  const initials = (name || 'User')
+    .split(/\s+/)
+    .map((p: string) => p[0]?.toUpperCase())
+    .slice(0, 2)
+    .join('');
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.replace('/(auth)/login');
+  };
+
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      <LinearGradient
+        colors={['#FFC107', '#FFA000']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.bigAvatar}
+      >
+        <Text style={styles.bigAvatarText}>{initials}</Text>
+      </LinearGradient>
+
+      <Text style={styles.title}>Welcome, {name}</Text>
+      <Text style={styles.subtitle}>{role}</Text>
+
+      <View style={styles.card}>
+        <View style={styles.row}>
+          <Feather name="mail" size={18} color="#6b7280" />
+          <Text style={styles.rowText}>{email || '—'}</Text>
+        </View>
+        <View style={styles.row}>
+          <Feather name="shield" size={18} color="#6b7280" />
+          <Text style={styles.rowText}>{role}</Text>
+        </View>
+        <View style={styles.row}>
+          <Feather name="calendar" size={18} color="#6b7280" />
+          <Text style={styles.rowText}>Joined: {joined}</Text>
+        </View>
+      </View>
+
+      {/* Any other details you want */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>About</Text>
+        <Text style={styles.sectionText}>
+          You are logged in as a {role}. From here you can manage users, items, routes, teams, vehicles, and view analytics.
+        </Text>
+      </View>
+
+      <Pressable onPress={handleSignOut} style={({ pressed }) => [styles.signOutBtn, pressed && { opacity: 0.85 }]}>
+        <Feather name="log-out" size={18} color="#fff" style={{ marginRight: 8 }} />
+        <Text style={styles.signOutText}>Sign Out</Text>
+      </Pressable>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 40,
+    alignItems: 'center',
+  },
+  bigAvatar: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    marginBottom: 12,
+  },
+  bigAvatarText: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: '800',
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  subtitle: {
+    marginTop: 4,
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 18,
+  },
+  card: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 16,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    marginBottom: 16,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    gap: 10,
+  },
+  rowText: {
+    fontSize: 15,
+    color: '#111827',
+  },
+  section: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 8,
+    color: '#111827',
+  },
+  sectionText: {
+    fontSize: 14,
+    color: '#374151',
+    lineHeight: 20,
+  },
+  signOutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ef4444',
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+  },
+  signOutText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+});
