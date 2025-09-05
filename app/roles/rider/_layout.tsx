@@ -3,8 +3,13 @@ import { useRouter } from "expo-router";
 import { signOut } from "@/lib/authStore";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { StyleSheet } from "react-native";
-import { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  StyleSheet,
+  View,
+  Text,
+  Pressable,
+} from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 function GradientIcon({
@@ -27,43 +32,82 @@ function GradientIcon({
   );
 }
 
-
-
-
 export default function RiderLayout() {
   const router = useRouter();
+
+  const [riderName, setRiderName] = useState<string>("");
+  const [riderEmail, setRiderEmail] = useState<string>("");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem("user");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          setRiderName(parsed?.name || parsed?.email || "");
+          setRiderEmail(parsed?.email || "");
+        }
+      } catch {
+        setRiderName("");
+        setRiderEmail("");
+      }
+    })();
+  }, []);
+
+  const initials = useMemo(() => {
+    const base = (riderName || riderEmail || "User").trim();
+    const parts = base.split(/\s+/);
+    const a = parts[0]?.[0] || "U";
+    const b = parts[1]?.[0] || "";
+    return (a + b).toUpperCase();
+  }, [riderName, riderEmail]);
+
+  const HeaderTitle = () => (
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
+      <Pressable
+        onPress={() => router.push("/roles/rider/profile")}
+        style={{ marginRight: 10 }}
+        accessibilityLabel="Open profile"
+      >
+        <LinearGradient
+          colors={["#FFC107", "#FFA000"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.avatar}
+        >
+          <Text style={styles.avatarText}>{initials}</Text>
+        </LinearGradient>
+      </Pressable>
+
+      <Text style={styles.headerTitleText}>
+        {riderName ? `Welcome ${riderName}` : "Welcome Rider"}
+      </Text>
+    </View>
+  );
 
   const handleSignOut = () => {
     signOut();
     router.replace("/(auth)/login");
   };
 
-  const [riderName, setRiderName] = useState<string>("");
-
-useEffect(() => {
-  (async () => {
-    try {
-      const raw = await AsyncStorage.getItem("user");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setRiderName(parsed?.name || parsed?.email || "");
-      }
-    } catch {
-      setRiderName("");
-    }
-  })();
-}, []);
-
   return (
     <Drawer
       screenOptions={{
-        headerTitle: riderName ? `Welcome ${riderName}` : "Welcome Cook",
-
+        headerTitle: () => <HeaderTitle />,
+        headerTitleAlign: "left",
         drawerActiveTintColor: "#7A4F01",
         drawerActiveBackgroundColor: "rgba(255,193,7,0.12)",
       }}
     >
-      {/* Map file routes to drawer items with nice titles */}
+      {/* NEW: Profile item */}
+      <Drawer.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          drawerIcon: ({ size }) => <GradientIcon name="user" size={size ?? 24} />,
+        }}
+      />
+
       <Drawer.Screen
         name="RiderOverview"
         options={{
@@ -120,7 +164,7 @@ useEffect(() => {
         }}
       />
 
-      {/* Custom Signout Button */}
+      {/* Sign Out */}
       <Drawer.Screen
         name="signout"
         options={{
@@ -129,9 +173,7 @@ useEffect(() => {
           drawerIcon: ({ size }) => <GradientIcon name="log-out" size={size ?? 24} />,
         }}
         listeners={{
-          focus: () => {
-            // This will be handled by the custom component
-          },
+          focus: handleSignOut,
         }}
       />
     </Drawer>
@@ -147,5 +189,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
+  },
+  avatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 4,
+  },
+  avatarText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+  headerTitleText: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#1f2937",
   },
 });
