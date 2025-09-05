@@ -166,14 +166,7 @@ export default function SupervisorLayout() {
         }}
       />
 
-      {/* You had two similarly named request screens; keeping both, but consider merging */}
-      <Drawer.Screen
-        name="RequestsManagement"
-        options={{
-          title: "Requests Management",
-          drawerIcon: ({ size }) => <GradientIcon name="package" size={size ?? 24} />,
-        }}
-      />
+
       <Drawer.Screen
         name="Request-management"
         options={{
