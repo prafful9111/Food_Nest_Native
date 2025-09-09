@@ -44,6 +44,7 @@ export default function Login() {
     if (!email || !password) {
       return Alert.alert(t("alerts.missingInfo.title"), t("alerts.missingInfo.msg"));
     }
+    
     setBusy(true);
     try {
       const res = await api.post("/api/auth/login", {

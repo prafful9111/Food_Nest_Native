@@ -14,7 +14,8 @@ import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
 /* ---------------- API baseline (same pattern as food-items.tsx) ---------------- */
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://192.168.29.87:1900";
+import { API_BASE_URL as API_URL } from '@/constants/env';
+
 
 async function apiGet<T>(path: string): Promise<T> {
   const r = await fetch(`${API_URL}${path}`);

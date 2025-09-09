@@ -27,7 +27,8 @@ const Water = require('../../../assets/water.png');
 
 // ====== API CONFIG (adjust to your env) ======
 // TIP: if you already keep API_BASE_URL in a central file, import it here instead.
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.29.87:1900'; // e.g., http://192.168.1.5:1900 on device
+import { API_BASE_URL as API_URL } from '@/constants/env';
+ // e.g., http://192.168.1.5:1900 on device
 
 // ---- Types (aligns with backend schema below) ----
 type Item = {
